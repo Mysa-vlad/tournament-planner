@@ -89,6 +89,19 @@ describe('errorHandler: не кожен об’єкт зі status — помил
     expect(handle(err).status).toBe(500);
   });
 
+  test.each([399, 500, 302])('поза 4xx: status %i з expose → 500 INTERNAL', (status) => {
+    const err = Object.assign(new Error('x'), { status, expose: true });
+    expect(handle(err)).toMatchObject({ status: 500, body: { error: 'INTERNAL' } });
+  });
+
+  test('status 4xx без поля expose → не клієнтська помилка (500)', () => {
+    expect(handle(Object.assign(new Error('x'), { status: 404 })).status).toBe(500);
+  });
+
+  test('status-рядок "404" з expose → 500 (лише числовий статус)', () => {
+    expect(handle(Object.assign(new Error('x'), { status: '404', expose: true })).status).toBe(500);
+  });
+
   test.each([400, 415, 499])('межі діапазону: status %i з expose → цей статус', (status) => {
     const err = Object.assign(new Error('client'), { status, expose: true });
     expect(handle(err).status).toBe(status);
