@@ -13,7 +13,10 @@ const main = async (): Promise<void> => {
     logger.info({ port: config.port, dataSource: config.dataSource }, 'server started');
   });
 
+  let stopping = false;
   const shutdown = (signal: string): void => {
+    if (stopping) return; // повторний сигнал під час зупинки ігноруємо
+    stopping = true;
     logger.info({ signal }, 'shutting down');
     server.close(() => {
       void container.close().finally(() => process.exit(0));

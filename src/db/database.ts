@@ -24,6 +24,7 @@ export interface Database {
 export const createDatabase = async (url: string): Promise<Database> => {
   const pg = new PGlite(url);
   const activeTx = new AsyncLocalStorage<Transaction>();
+  let closing: Promise<void> | undefined;
 
   const run = async <Row>(executor: Executor, query: SqlQuery): Promise<Row[]> => {
     countQuery();
@@ -58,7 +59,8 @@ export const createDatabase = async (url: string): Promise<Database> => {
       }
     },
     inTransaction: () => activeTx.getStore() !== undefined,
-    close: () => pg.close(),
+    // spec-lab2 §4: повторний close() — no-op (подвійний SIGINT не валить процес)
+    close: () => (closing ??= pg.close()),
   };
 
   // AC8 / рекомендація: явна ініціалізація + SELECT now() — падаємо одразу, а не на першому запиті
