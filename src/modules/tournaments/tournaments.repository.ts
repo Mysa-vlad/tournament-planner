@@ -7,7 +7,6 @@ export interface TournamentsRepository {
   list(): Promise<Tournament[]>;
   save(tournament: Tournament): Promise<void>;
   listEntries(tournamentId: Id): Promise<TournamentEntry[]>;
-  listEntriesByTeam(teamId: Id): Promise<TournamentEntry[]>;
   saveEntry(entry: TournamentEntry): Promise<void>;
 }
 
@@ -23,7 +22,6 @@ export const createInMemoryTournamentsRepository = (): TournamentsRepository => 
     },
     listEntries: (tournamentId) =>
       Promise.resolve(entries.filter((e) => e.tournamentId === tournamentId)),
-    listEntriesByTeam: (teamId) => Promise.resolve(entries.filter((e) => e.teamId === teamId)),
     saveEntry: (entry) => {
       entries.push(entry);
       return Promise.resolve();

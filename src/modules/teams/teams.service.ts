@@ -1,5 +1,4 @@
 import { DomainError, newId, type Id } from '../../shared/index.js';
-import { type TournamentsService } from '../tournaments/index.js';
 import type { Player, Team } from './teams.domain.js';
 import type { TeamsRepository } from './teams.repository.js';
 
@@ -10,10 +9,8 @@ export interface TeamsService {
   addPlayer(teamId: Id, input: { fullName: string; number: number }): Promise<Player>;
 }
 
-export const createTeamsService = (
-  repo: TeamsRepository,
-  tournaments: () => TournamentsService,
-): TeamsService => {
+/** spec D4: teams — листовий модуль, залежить лише від shared. */
+export const createTeamsService = (repo: TeamsRepository): TeamsService => {
   const getTeam = async (id: Id): Promise<Team> => {
     const team = await repo.findById(id);
     if (!team) throw new DomainError('NOT_FOUND', `Team ${id} not found`);
@@ -31,9 +28,6 @@ export const createTeamsService = (
     listTeams: () => repo.list(),
     async addPlayer(teamId, { fullName, number }) {
       await getTeam(teamId);
-      if (await tournaments().isTeamInActiveTournament(teamId)) {
-        throw new DomainError('CONFLICT', 'Roster is frozen while the team plays a tournament');
-      }
       const roster = await repo.listPlayers(teamId);
       if (roster.some((p) => p.number === number)) {
         throw new DomainError('CONFLICT', `Number ${String(number)} is already taken`);

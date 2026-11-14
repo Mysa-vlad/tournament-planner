@@ -15,7 +15,6 @@ export interface TournamentsService {
   registerTeam(tournamentId: Id, teamId: Id): Promise<TournamentEntry>;
   listTeamIds(tournamentId: Id): Promise<Id[]>;
   changeStatus(tournamentId: Id, to: TournamentStatus): Promise<Tournament>;
-  isTeamInActiveTournament(teamId: Id): Promise<boolean>;
 }
 
 export const createTournamentsService = (
@@ -67,13 +66,6 @@ export const createTournamentsService = (
       const updated: Tournament = { ...t, status: to };
       await repo.save(updated);
       return updated;
-    },
-    async isTeamInActiveTournament(teamId) {
-      const entries = await repo.listEntriesByTeam(teamId);
-      for (const e of entries) {
-        if ((await get(e.tournamentId)).status === 'in_progress') return true;
-      }
-      return false;
     },
   };
 };

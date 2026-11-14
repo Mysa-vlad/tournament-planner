@@ -10,26 +10,19 @@ import {
   createInMemoryTeamsRepository,
   createTeamsRouter,
   createTeamsService,
-  type TeamsService,
 } from '../modules/teams/index.js';
 import {
   createInMemoryTournamentsRepository,
   createTournamentsRouter,
   createTournamentsService,
-  type TournamentsService,
 } from '../modules/tournaments/index.js';
 import { errorHandler } from './error-handler.js';
 
 /** Composition root: тут і лише тут модулі з'єднуються між собою (ручний DI). */
 export const createApp = (config: AppConfig): Express => {
-  const teamsRepo = createInMemoryTeamsRepository();
-
-  // teams ↔ tournaments посилаються один на одного — лінива фабрика розриває цикл ініціалізації
-  // eslint-disable-next-line prefer-const
-  let tournaments: TournamentsService;
-  const teams: TeamsService = createTeamsService(teamsRepo, () => tournaments);
-  tournaments = createTournamentsService(createInMemoryTournamentsRepository(), teams);
-
+  // порядок створення = напрям графа залежностей spec §3 (D4): teams → tournaments → matches → standings
+  const teams = createTeamsService(createInMemoryTeamsRepository());
+  const tournaments = createTournamentsService(createInMemoryTournamentsRepository(), teams);
   const matches = createMatchesService(createInMemoryMatchesRepository(), tournaments, teams);
   const standings = createStandingsService(tournaments, teams, matches);
 
