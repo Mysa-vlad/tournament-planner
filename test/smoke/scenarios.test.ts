@@ -136,6 +136,8 @@ for (const dataSource of SOURCES) {
       assert.equal(missing.status, 404);
       assert.ok(missing.body.requestId);
       assert.equal((await call('GET', '/nope')).status, 404);
+      // spec-lab2 §4: не-UUID id → 400 на кожному джерелі (на pg було 500)
+      assert.equal((await call('GET', '/tournaments/not-a-uuid')).status, 400);
       const res = await fetch(`${srv.baseUrl}/teams`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-user-id': ORG },

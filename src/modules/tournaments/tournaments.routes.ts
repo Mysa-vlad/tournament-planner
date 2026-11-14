@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
+
 import type { TournamentsService } from './tournaments.service.js';
+
+/** spec-lab2 §4: id не UUID → 400 на будь-якому джерелі (а не 500 від Postgres). */
+const IdParam = z.uuid();
 
 const CreateTournamentBody = z.object({
   name: z.string().trim().min(1).max(100),
@@ -17,11 +21,11 @@ export const createTournamentsRouter = (service: TournamentsService): Router => 
     res.status(201).json(await service.create(CreateTournamentBody.parse(req.body)));
   });
   router.get('/:id', async (req, res) => {
-    res.json(await service.get(req.params.id));
+    res.json(await service.get(IdParam.parse(req.params.id)));
   });
   router.post('/:id/entries', async (req, res) => {
     const { teamId } = RegisterTeamBody.parse(req.body);
-    const { entry, created } = await service.registerTeam(req.params.id, teamId);
+    const { entry, created } = await service.registerTeam(IdParam.parse(req.params.id), teamId);
     res.status(created ? 201 : 200).json(entry);
   });
   return router;

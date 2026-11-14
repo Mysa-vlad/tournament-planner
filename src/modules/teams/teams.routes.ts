@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
+
 import type { TeamsService } from './teams.service.js';
+
+/** spec-lab2 §4: id не UUID → 400 на будь-якому джерелі (а не 500 від Postgres). */
+const IdParam = z.uuid();
 
 // HTTP-рівень: лише форма запиту/відповіді; бізнес-правила — у сервісі (spec-lab2 D6).
 const CreateTeamBody = z.object({
@@ -21,13 +25,15 @@ export const createTeamsRouter = (service: TeamsService): Router => {
     res.status(201).json(await service.createTeam(CreateTeamBody.parse(req.body)));
   });
   router.get('/:id', async (req, res) => {
-    res.json(await service.getTeam(req.params.id));
+    res.json(await service.getTeam(IdParam.parse(req.params.id)));
   });
   router.get('/:id/players', async (req, res) => {
-    res.json(await service.listPlayers(req.params.id));
+    res.json(await service.listPlayers(IdParam.parse(req.params.id)));
   });
   router.post('/:id/players', async (req, res) => {
-    res.status(201).json(await service.addPlayer(req.params.id, AddPlayerBody.parse(req.body)));
+    res
+      .status(201)
+      .json(await service.addPlayer(IdParam.parse(req.params.id), AddPlayerBody.parse(req.body)));
   });
   return router;
 };
