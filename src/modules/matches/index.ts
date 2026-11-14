@@ -4,3 +4,4 @@ export type { MatchesService, MatchesDeps, ScheduledMatchView } from './matches.
 export { createMatchesService } from './matches.service.js';
 export { createInMemoryMatchesRepository, type MatchesRepository } from './matches.repository.js';
 export { createMatchesRouter } from './matches.routes.js';
+export { createPgMatchesRepository } from './matches.pg.repository.js';

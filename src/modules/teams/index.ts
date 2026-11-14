@@ -7,3 +7,4 @@ export {
   type TeamsSeed,
 } from './teams.repository.js';
 export { createTeamsRouter } from './teams.routes.js';
+export { createPgTeamsRepository } from './teams.pg.repository.js';

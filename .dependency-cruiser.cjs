@@ -54,6 +54,16 @@ module.exports = {
       from: { path: '^src/shared/' },
       to: { path: ['node_modules/express/', '^src/(modules|http|config)/'] },
     },
+    {
+      name: 'D6-sql-only-in-db-and-repositories',
+      comment: 'spec-lab2 D6: SQL і транзакції — лише в src/db/ та *.repository.ts',
+      severity: 'error',
+      from: {
+        path: '^src/',
+        pathNot: ['^src/db/', '\\.repository\\.ts$', '^src/composition\\.ts$'],
+      },
+      to: { path: ['^src/db/', 'node_modules/@electric-sql/'] },
+    },
   ],
   options: {
     doNotFollow: { path: 'node_modules' },

@@ -6,7 +6,7 @@ import { api, startTestServer, type TestServer } from './helpers.js';
 type Json = Record<string, unknown>;
 
 // AC7: один і той самий сценарій має проходити на кожному джерелі даних
-const SOURCES: readonly DataSource[] = (process.env.SMOKE_SOURCES ?? 'static')
+const SOURCES: readonly DataSource[] = (process.env.SMOKE_SOURCES ?? 'static,pg')
   .split(',')
   .map((s) => s.trim() as DataSource);
 

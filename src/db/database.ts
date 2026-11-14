@@ -1,0 +1,73 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { PGlite, type Transaction } from '@electric-sql/pglite';
+import { countQuery, logger } from '../shared/index.js';
+import { translateDbError } from './errors.js';
+import type { SqlQuery } from './sql.js';
+
+type Executor = Pick<PGlite, 'query' | 'exec'> | Pick<Transaction, 'query' | 'exec'>;
+
+/** Ресурс БД: створюється й перевіряється ОДИН раз на старті (composition root). */
+export interface Database {
+  query<Row>(query: SqlQuery): Promise<Row[]>;
+  /** BEGIN … COMMIT; запити всередині автоматично йдуть у цю транзакцію (через ALS) */
+  transaction<T>(fn: () => Promise<T>): Promise<T>;
+  /** кілька SQL-операторів без параметрів (міграції) */
+  exec(text: string): Promise<void>;
+  inTransaction(): boolean;
+  close(): Promise<void>;
+}
+
+/**
+ * spec D6: транзакції й SQL живуть лише тут і в *.repository.ts.
+ * Активна транзакція лежить в AsyncLocalStorage — репозиторіям не треба передавати `tx`.
+ */
+export const createDatabase = async (url: string): Promise<Database> => {
+  const pg = new PGlite(url);
+  const activeTx = new AsyncLocalStorage<Transaction>();
+
+  const run = async <Row>(executor: Executor, query: SqlQuery): Promise<Row[]> => {
+    countQuery();
+    const startedAt = performance.now();
+    try {
+      const result = await executor.query<Row>(query.text, [...query.values]);
+      // AC10: лог шару БД теж містить requestId/userId (mixin логера)
+      logger.debug({ sql: query.text, ms: Math.round(performance.now() - startedAt) }, 'db query');
+      return result.rows;
+    } catch (err) {
+      throw translateDbError(err);
+    }
+  };
+
+  const db: Database = {
+    query: (query) => run(activeTx.getStore() ?? pg, query),
+    async transaction(fn) {
+      const outer = activeTx.getStore();
+      if (outer) return fn(); // вкладена операція — частина зовнішньої транзакції
+      try {
+        return await pg.transaction((tx) => activeTx.run(tx, fn));
+      } catch (err) {
+        throw translateDbError(err);
+      }
+    },
+    async exec(text) {
+      countQuery();
+      try {
+        await (activeTx.getStore() ?? pg).exec(text);
+      } catch (err) {
+        throw translateDbError(err);
+      }
+    },
+    inTransaction: () => activeTx.getStore() !== undefined,
+    close: () => pg.close(),
+  };
+
+  // AC8 / рекомендація: явна ініціалізація + SELECT now() — падаємо одразу, а не на першому запиті
+  try {
+    await pg.waitReady;
+    const [row] = await pg.query<{ now: Date }>('SELECT now() AS now').then((r) => r.rows);
+    logger.info({ url: url.startsWith('memory') ? url : 'file', now: row?.now }, 'database ready');
+  } catch (err) {
+    throw new Error(`Database initialisation failed (${url})`, { cause: err });
+  }
+  return db;
+};
