@@ -79,3 +79,5 @@ npm run mutation     # Stryker → reports/mutation/index.html
 | Unit         | `test/unit/`        | нічого (чисті функції, in-memory репозиторії)       |
 | Інтеграційні | `test/integration/` | PGlite `memory://` + express через supertest        |
 | E2E          | `test/e2e/`         | `node dist/server.js`, файлова БД у тимчасовій теці |
+
+<!-- audit: commit message check -->
