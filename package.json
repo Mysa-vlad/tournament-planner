@@ -18,7 +18,8 @@
     "format:check": "prettier --check .",
     "test:smoke": "node --import tsx --test test/smoke/*.test.ts",
     "audit:deps": "depcruise src --config .dependency-cruiser.cjs",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run audit:deps && npm run test:smoke && npm run build"
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run audit:deps && npm run test:smoke && npm run build",
+    "prepare": "husky"
   },
   "author": "Мусієнко Владислав (ІО-44)",
   "license": "MIT",
@@ -39,5 +40,14 @@
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.2"
+  },
+  "lint-staged": {
+    "*.{ts,js,cjs,mjs}": [
+      "prettier --check",
+      "eslint --max-warnings 0"
+    ],
+    "*.{md,json,yml,yaml}": [
+      "prettier --check"
+    ]
   }
 }
