@@ -43,6 +43,25 @@ describe('MatchesService', () => {
       expect(again.created).toBe(false);
       expect(again.matches.map((m) => m.id).sort()).toEqual(first.matches.map((m) => m.id).sort());
     });
+    test('два паралельні старти: один створює розклад, другий отримує той самий (AC9, гонка)', async () => {
+      const { tournamentId } = await tournamentWithTeams(s, 4);
+      const [x, y] = await Promise.all([
+        as(ORG, () => s.matches.startTournament(tournamentId)),
+        as(ORG, () => s.matches.startTournament(tournamentId)),
+      ]);
+      expect([x.created, y.created].sort()).toEqual([false, true]);
+      expect(x.matches.map((m) => m.id).sort()).toEqual(y.matches.map((m) => m.id).sort());
+      expect(x.matches).toHaveLength(6);
+    });
+
+    test('статус уже не registration, а розкладу немає → CONFLICT, а не порожній 200', async () => {
+      const { tournamentId } = await tournamentWithTeams(s, 2);
+      await s.repos.tournaments.transitionStatus(tournamentId, 'registration', 'in_progress');
+      await expect(as(ORG, () => s.matches.startTournament(tournamentId))).rejects.toMatchObject({
+        code: 'CONFLICT',
+        message: 'Tournament is in_progress',
+      });
+    });
   });
 
   describe('recordResult (S3 + S5)', () => {
