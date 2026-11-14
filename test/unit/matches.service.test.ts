@@ -94,6 +94,16 @@ describe('MatchesService', () => {
       ).rejects.toMatchObject({ code: 'NOT_FOUND' });
     });
 
+    test('S5 лише після ОСТАННЬОГО результату: проміжні не завершують турнір', async () => {
+      const { tournamentId, matchIds } = await started(3);
+      const [m1 = '', m2 = '', m3 = ''] = matchIds;
+      await as(ORG, () => s.matches.recordResult(m1, 1, 0));
+      await as(ORG, () => s.matches.recordResult(m2, 1, 0));
+      expect((await s.tournaments.get(tournamentId)).status).toBe('in_progress');
+      await as(ORG, () => s.matches.recordResult(m3, 1, 0));
+      expect((await s.tournaments.get(tournamentId)).status).toBe('finished');
+    });
+
     test('останній результат завершує турнір (S5)', async () => {
       const { tournamentId, matchIds } = await started(2);
       await as(ORG, () => s.matches.recordResult(matchIds[0] ?? '', 0, 0));
