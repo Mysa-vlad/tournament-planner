@@ -144,6 +144,13 @@ for (const dataSource of SOURCES) {
         body: '{bad json',
       });
       assert.equal(res.status, 400);
+      // spec-lab2 §4: завелике тіло → 413, а не 500
+      const big = await fetch(`${srv.baseUrl}/teams`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-user-id': ORG },
+        body: JSON.stringify({ name: 'x'.repeat(200_000) }),
+      });
+      assert.equal(big.status, 413);
     });
   });
 }
