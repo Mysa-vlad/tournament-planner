@@ -1,0 +1,4 @@
+# DoD A4-A6 + spec-lab3 AC17: межі модулів, unit + інтеграційні з порогами покриття, збірка + E2E
+npm run audit:deps
+npm test
+npm run test:e2e

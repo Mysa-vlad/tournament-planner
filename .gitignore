@@ -5,5 +5,10 @@ coverage/
 .env
 .env.*
 !.env.example
+!.env.static
+!.env.probe
 *.pdf
 .DS_Store
+.data/
+reports/
+.stryker-tmp/
