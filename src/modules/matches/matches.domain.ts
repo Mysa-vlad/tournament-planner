@@ -50,10 +50,12 @@ export const generateRoundRobin = (teamIds: readonly Id[]): Pairing[] => {
     for (let i = 0; i < n / 2; i++) {
       const a = slots[i];
       const b = slots[n - 1 - i];
-      if (a === BYE || b === BYE) continue; // команда цього туру відпочиває
-      // spec S2: |домашні − виїзні| ≤ 1. Фіксований слот (i = 0) чергується за туром,
-      // решта пар — за парністю позиції; разом з обертанням це дає оптимальний баланс.
-      const aIsHome = i === 0 ? round % 2 === 0 : i % 2 === 1;
+      // BYE стоїть лише у фіксованому слоті 0, тож він може бути тільки `a`
+      if (a === BYE || b === undefined) continue; // команда цього туру відпочиває
+      // spec S2: |домашні − виїзні| ≤ 1. Обертання саме чергує позиції нефіксованих команд,
+      // тож досить: верхня половина вдома, а фіксований слот чергується за туром.
+      // (Stryker прогін 2: орієнтація за парністю пари виявилась зайвою — еквівалентні мутанти.)
+      const aIsHome = i > 0 || round % 2 === 0;
       const [homeTeamId, awayTeamId] = aIsHome ? [a, b] : [b, a];
       pairings.push({ round: round + 1, homeTeamId, awayTeamId });
     }
