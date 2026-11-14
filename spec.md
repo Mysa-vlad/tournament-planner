@@ -32,9 +32,12 @@ graph LR
   http --> tournaments & teams & matches & standings
   tournaments --> teams
   matches --> tournaments & teams
-  standings --> matches & teams
+  standings --> matches & teams & tournaments
   tournaments & teams & matches & standings --> shared
 ```
+
+`standings → tournaments`: у таблиці мають бути всі заявлені команди, зокрема ті, що ще не
+зіграли жодного матчу, а перелік заявок належить `tournaments`.
 
 ## 4. Дані та зв'язки
 
