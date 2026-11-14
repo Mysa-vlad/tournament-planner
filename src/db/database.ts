@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { mkdirSync } from 'node:fs';
 import { PGlite, type Transaction } from '@electric-sql/pglite';
 import { countQuery, logger } from '../shared/index.js';
 import { translateDbError } from './errors.js';
@@ -22,6 +23,8 @@ export interface Database {
  * Активна транзакція лежить в AsyncLocalStorage — репозиторіям не треба передавати `tx`.
  */
 export const createDatabase = async (url: string): Promise<Database> => {
+  // файловий режим: PGlite не створює батьківський каталог сам
+  if (!url.includes('://')) mkdirSync(url, { recursive: true });
   const pg = new PGlite(url);
   const activeTx = new AsyncLocalStorage<Transaction>();
   let closing: Promise<void> | undefined;
