@@ -1,2 +1,2 @@
 export { newId, type Id } from './ids.js';
-export { DomainError, sendDomainError, type DomainErrorCode } from './errors.js';
+export { DomainError, type DomainErrorCode } from './errors.js';
