@@ -96,6 +96,14 @@ describe('TeamsService', () => {
     });
   });
 
+  test('getTeamsByIds: у повідомленні лише відсутні id, навіть коли знайдено кілька команд', async () => {
+    const a = await as(ORG, () => s.teams.createTeam({ name: 'A', city: '' }));
+    const b = await as(ORG, () => s.teams.createTeam({ name: 'B', city: '' }));
+    await expect(s.teams.getTeamsByIds([a.id, 'gone', b.id])).rejects.toMatchObject({
+      message: 'Teams not found: gone',
+    });
+  });
+
   test('listTeams і getTeam', async () => {
     const a = await as(ORG, () => s.teams.createTeam({ name: 'A', city: '' }));
     expect(await s.teams.listTeams()).toHaveLength(1);

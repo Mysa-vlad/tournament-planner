@@ -35,5 +35,10 @@ export default tseslint.config(
     files: ['**/*.js', '**/*.cjs', '**/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
   },
+  {
+    // у JS-скриптах немає синтаксису для типу повернення
+    files: ['**/*.js', '**/*.cjs', '**/*.mjs'],
+    rules: { '@typescript-eslint/explicit-function-return-type': 'off' },
+  },
   prettier,
 );
