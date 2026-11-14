@@ -1,6 +1,6 @@
 # Spec — Tournament Planner (Завдання 1: фундамент і структура)
 
-> Завдання 2 (API, схема БД, помилки, D6–D9, AC7–AC12): [spec-lab2.md](spec-lab2.md). Завдання 3 (тести, T1–T4, AC13–AC17): [spec-lab3.md](spec-lab3.md).
+> Завдання 2 (API, схема БД, помилки, D6–D9, AC7–AC12): [spec-lab2.md](spec-lab2.md). Завдання 3 (тести, T1–T6, AC13–AC17): [spec-lab3.md](spec-lab3.md). Завдання 4 (CI/CD, AC18–AC22): [spec-lab4.md](spec-lab4.md).
 
 ## 1. Намір
 
