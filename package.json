@@ -20,7 +20,8 @@
     "audit:deps": "depcruise src --config .dependency-cruiser.cjs",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run audit:deps && npm run test:smoke && npm run build",
     "prepare": "husky",
-    "dev:static": "tsx watch --env-file=.env.static src/server.ts"
+    "dev:static": "tsx watch --env-file=.env.static src/server.ts",
+    "probe:queries": "tsx --env-file=test/smoke.env scripts/probe-queries.ts"
   },
   "author": "Мусієнко Владислав (ІО-44)",
   "license": "MIT",
