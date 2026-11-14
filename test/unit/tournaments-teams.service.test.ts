@@ -73,12 +73,26 @@ describe('TeamsService', () => {
     ]);
   });
 
+  test('різні номери в одній команді дозволені; той самий номер в іншій команді теж', async () => {
+    const a = await as(ORG, () => s.teams.createTeam({ name: 'A', city: '' }));
+    const b = await as(ORG, () => s.teams.createTeam({ name: 'B', city: '' }));
+    await as(ORG, () => s.teams.addPlayer(a.id, { fullName: 'P1', number: 1 }));
+    await as(ORG, () => s.teams.addPlayer(a.id, { fullName: 'P2', number: 2 }));
+    await as(ORG, () => s.teams.addPlayer(b.id, { fullName: 'P3', number: 1 }));
+    expect((await s.teams.listPlayers(a.id)).map((p) => p.number).sort()).toEqual([1, 2]);
+  });
+
+  test('createTeam обрізає пробіли і в назві, і в місті (сервіс, не лише HTTP)', async () => {
+    const team = await as(ORG, () => s.teams.createTeam({ name: '  A  ', city: ' Київ ' }));
+    expect(team).toMatchObject({ name: 'A', city: 'Київ' });
+  });
+
   test('getTeamsByIds: дублікати згортаються; відсутня команда → NOT_FOUND', async () => {
     const a = await as(ORG, () => s.teams.createTeam({ name: 'A', city: '' }));
     expect(await s.teams.getTeamsByIds([a.id, a.id])).toHaveLength(1);
     await expect(s.teams.getTeamsByIds([a.id, 'missing'])).rejects.toMatchObject({
       code: 'NOT_FOUND',
-      message: expect.stringContaining('missing') as unknown,
+      message: 'Teams not found: missing',
     });
   });
 
