@@ -21,7 +21,7 @@ export interface StandingRow {
   points: number;
 }
 
-export const POINTS = { win: 3, draw: 1, loss: 0 } as const;
+export const POINTS = { win: 2, draw: 1, loss: 0 } as const;
 
 /**
  * S4: турнірна таблиця. Чиста функція (AC6).
