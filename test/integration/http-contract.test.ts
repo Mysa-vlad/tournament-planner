@@ -54,7 +54,10 @@ describe('HTTP-контракт ресурсів', () => {
       .set('x-user-id', ORG)
       .send({ fullName: 'Петро', number: 7 });
     expect(dup.status).toBe(409);
-    expect((await request(app).get(`/teams/${id}/players`)).body).toHaveLength(1);
+    // повний об'єкт, а не лише кількість: інакше маплінг рядка БД у Player не перевірено
+    expect((await request(app).get(`/teams/${id}/players`)).body).toEqual([
+      { id: json(player).id, teamId: id, fullName: 'Іван', number: 7 },
+    ]);
     expect(((await request(app).get('/teams')).body as unknown[]).length).toBeGreaterThanOrEqual(1);
   });
 
