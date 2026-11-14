@@ -24,7 +24,7 @@
 ## Decision
 
 Обрано **модулі за доменами**. Кожен модуль експортує публічний API лише через `index.ts`.
-Правила D1–D3 зі spec перевіряє dependency-cruiser (`npm run audit:deps`).
+Правила D1–D5 зі spec перевіряє dependency-cruiser (`npm run audit:deps`).
 
 ## Pros and Cons of the Options
 
