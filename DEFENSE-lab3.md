@@ -2,7 +2,7 @@
 
 # DEFENSE — Завдання 3: Тестування
 
-**PR:** _<посилання на PR `feat/lab3-testing`>_ · Spec: [spec-lab3.md](spec-lab3.md) · Аудит:
+**PR:** [Mysa-vlad/tournament-planner#3](https://github.com/Mysa-vlad/tournament-planner/pull/3) · Spec: [spec-lab3.md](spec-lab3.md) · Аудит:
 [ai/06-lab3-audit.md](ai/06-lab3-audit.md)
 
 **1. Що я просив у AI.** Покрити застосунок із Завдання 2 тестами всіх рівнів (unit,
