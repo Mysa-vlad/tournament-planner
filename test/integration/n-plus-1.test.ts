@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { testDatabaseUrl } from '../test-db.js';
 import { test } from 'vitest';
 import { createContainer } from '../../src/composition.js';
 import { runWithContext, type RequestContext } from '../../src/shared/index.js';
@@ -10,8 +11,9 @@ const queriesFor = async (teams: number): Promise<{ schedule: number; standings:
   const container = await createContainer({
     port: 0,
     version: 'test',
+    gitSha: 'test',
     dataSource: 'pg',
-    databaseUrl: 'memory://',
+    databaseUrl: testDatabaseUrl,
   });
   const { services } = container;
   try {

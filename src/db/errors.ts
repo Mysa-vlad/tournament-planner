@@ -1,8 +1,16 @@
 import { SourceUnavailableError } from '../shared/index.js';
 
-/** PostgreSQL SQLSTATE з помилки драйвера (PGlite/pg кладуть його в `code`). */
+/**
+ * PostgreSQL SQLSTATE з помилки драйвера (PGlite/pg кладуть його в `code`).
+ * Лише 5 символів [0-9A-Z]: мережеві коди Node (`ECONNREFUSED`, `ETIMEDOUT`) — не SQLSTATE,
+ * це збій джерела (spec-lab4: pg-адаптер до віддаленого сервера).
+ */
 export const sqlState = (err: unknown): string | undefined =>
-  typeof err === 'object' && err !== null && 'code' in err && typeof err.code === 'string'
+  typeof err === 'object' &&
+  err !== null &&
+  'code' in err &&
+  typeof err.code === 'string' &&
+  /^[0-9A-Z]{5}$/.test(err.code)
     ? err.code
     : undefined;
 

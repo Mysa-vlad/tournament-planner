@@ -1,4 +1,5 @@
--- spec-lab2 §3: схема БД
+-- spec-lab2 §3: схема БД. Крок "schema" (spec-lab4 §4): лише DDL, сумісні назад зміни.
+-- Індекси — окремий крок migrations/indexes/.
 
 CREATE TABLE teams (
   id    uuid PRIMARY KEY,
@@ -44,5 +45,3 @@ CREATE TABLE matches (
   -- друга лінія захисту від подвійного розкладу (AC9)
   UNIQUE (tournament_id, home_team_id, away_team_id)
 );
-
-CREATE INDEX matches_tournament_idx ON matches (tournament_id, round);

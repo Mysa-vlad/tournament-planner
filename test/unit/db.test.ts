@@ -93,3 +93,32 @@ describe('createPgUnitOfWork: повтори транзієнтних конфл
     expect(db.calls).toBe(0);
   });
 });
+
+describe('адаптер PostgreSQL-сервера (spec-lab4)', () => {
+  test('describeUrl ніколи не показує пароль', async () => {
+    const { describeUrl, isPostgresUrl } = await import('../../src/db/database.js');
+    expect(describeUrl('postgresql://user:s3cret@ep-x.neon.tech/app?sslmode=require')).toBe(
+      'postgresql://ep-x.neon.tech/app',
+    );
+    expect(describeUrl('memory://')).toBe('memory://');
+    expect(describeUrl('./.data/pg')).toBe('file');
+    expect(describeUrl('postgres://[bad')).toBe('invalid-url');
+    expect(isPostgresUrl('postgres://h/db')).toBe(true);
+    expect(isPostgresUrl('postgresql://h/db')).toBe(true);
+    expect(isPostgresUrl('memory://')).toBe(false);
+  });
+
+  test('мережеві коди Node (ECONNREFUSED) — це збій джерела, а не SQLSTATE', () => {
+    const err = Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' });
+    expect(translateDbError(err)).toBeInstanceOf(SourceUnavailableError);
+  });
+
+  test('недоступний PostgreSQL на старті → помилка ініціалізації без пароля в тексті', async () => {
+    const { createDatabase } = await import('../../src/db/database.js');
+    const attempt = createDatabase('postgres://u:topsecret@127.0.0.1:1/none');
+    await expect(attempt).rejects.toThrow(
+      'Database initialisation failed (postgres://127.0.0.1/none)',
+    );
+    await expect(attempt).rejects.not.toThrow(/topsecret/);
+  });
+});

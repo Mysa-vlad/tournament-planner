@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { testDatabaseUrl } from '../test-db.js';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { createContainer, type Container } from '../../src/composition.js';
 import { createApp } from '../../src/http/app.js';
@@ -14,10 +15,11 @@ beforeAll(async () => {
   container = await createContainer({
     port: 0,
     version: 'it',
+    gitSha: 'test',
     dataSource: 'pg',
-    databaseUrl: 'memory://',
+    databaseUrl: testDatabaseUrl,
   });
-  app = createApp(container.services, { version: 'it' });
+  app = createApp(container, { version: 'it', gitSha: 'test' });
 });
 afterAll(() => container.close());
 

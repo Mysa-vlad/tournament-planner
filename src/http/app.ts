@@ -1,5 +1,5 @@
 import express, { type Express } from 'express';
-import type { Services } from '../composition.js';
+import type { Container } from '../composition.js';
 import { createMatchesRouter } from '../modules/matches/index.js';
 import { createStandingsRouter } from '../modules/standings/index.js';
 import { createTeamsRouter } from '../modules/teams/index.js';
@@ -8,14 +8,34 @@ import { contextMiddleware } from './context-middleware.js';
 import { errorHandler } from './error-handler.js';
 
 /** HTTP-рівень: знає лише про маршрути й формат; сервіси приходять готовими з composition root. */
-export const createApp = (services: Services, info: { version: string }): Express => {
+export interface AppInfo {
+  readonly version: string;
+  readonly gitSha: string;
+}
+
+export const createApp = (
+  container: Pick<Container, 'services' | 'readiness'>,
+  info: AppInfo,
+): Express => {
+  const { services } = container;
+  const startedAt = new Date().toISOString();
   const app = express();
   app.disable('x-powered-by');
   app.use(contextMiddleware);
   app.use(express.json({ limit: '100kb' }));
 
+  // liveness: процес живий (Render перезапускає, якщо ні)
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', version: info.version });
+  });
+  // readiness (spec-lab4 AC20): blue-green — трафік лише на готовий інстанс
+  app.get('/health/ready', async (_req, res) => {
+    const { ready, checks } = await container.readiness();
+    res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready', checks });
+  });
+  // spec-lab4 AC19: яку саме версію задеплоєно (потрібно й у завданні 5)
+  app.get('/version', (_req, res) => {
+    res.json({ sha: info.gitSha, version: info.version, startedAt });
   });
 
   app.use('/teams', createTeamsRouter(services.teams));

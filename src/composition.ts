@@ -1,5 +1,12 @@
 import type { AppConfig } from './config/env.js';
-import { createDatabase, createPgUnitOfWork, migrate } from './db/index.js';
+import {
+  createDatabase,
+  createPgUnitOfWork,
+  isPostgresUrl,
+  migrate,
+  schemaStatus,
+  sql,
+} from './db/index.js';
 import {
   createInMemoryMatchesRepository,
   createMatchesService,
@@ -32,8 +39,15 @@ export interface Services {
   readonly standings: StandingsService;
 }
 
+export interface Readiness {
+  readonly ready: boolean;
+  readonly checks: Readonly<Record<string, string>>;
+}
+
 export interface Container {
   readonly services: Services;
+  /** spec-lab4 AC20: чи можна пускати трафік на цей інстанс (blue-green) */
+  readiness(): Promise<Readiness>;
   /** звільнити ресурси (з'єднання з БД) під час graceful shutdown */
   close(): Promise<void>;
 }
@@ -43,6 +57,7 @@ interface Infrastructure {
   readonly tournamentsRepo: TournamentsRepository;
   readonly matchesRepo: MatchesRepository;
   readonly uow: UnitOfWork;
+  readiness(): Promise<Readiness>;
   close(): Promise<void>;
 }
 
@@ -51,14 +66,37 @@ const staticInfrastructure = (): Infrastructure => ({
   tournamentsRepo: createInMemoryTournamentsRepository(staticTournaments),
   matchesRepo: createInMemoryMatchesRepository(staticMatches),
   uow: passthroughUnitOfWork,
+  readiness: () => Promise.resolve({ ready: true, checks: { dataSource: 'static' } }),
   close: () => Promise.resolve(),
 });
 
 const pgInfrastructure = async (databaseUrl: string): Promise<Infrastructure> => {
   // AC8: createDatabase робить SELECT now() і кидає помилку, якщо БД недоступна
   const db = await createDatabase(databaseUrl);
-  await migrate(db);
+  // spec-lab4 AC21: на PostgreSQL-сервері міграції — окремий крок CD, не старт застосунку
+  // (інакше довга міграція → таймаут старту → рестарт → цикл). Вбудований PGlite мігрує сам.
+  if (!isPostgresUrl(databaseUrl)) await migrate(db);
+
+  const readiness = async (): Promise<Readiness> => {
+    try {
+      await db.query(sql`SELECT 1`);
+      const schema = await schemaStatus(db);
+      return {
+        ready: schema.upToDate,
+        checks: {
+          database: 'ok',
+          schema: schema.upToDate
+            ? `ok (${schema.applied ?? 'none'})`
+            : `behind: applied ${schema.applied ?? 'none'}, expected ${schema.expected ?? 'none'}`,
+        },
+      };
+    } catch {
+      return { ready: false, checks: { database: 'unavailable' } };
+    }
+  };
+
   return {
+    readiness,
     teamsRepo: createPgTeamsRepository(db),
     tournamentsRepo: createPgTournamentsRepository(db),
     matchesRepo: createPgMatchesRepository(db),
@@ -87,5 +125,9 @@ export const createContainer = async (config: AppConfig): Promise<Container> => 
     uow: infra.uow,
   });
   const standings = createStandingsService(tournaments, teams, matches);
-  return { services: { teams, tournaments, matches, standings }, close: () => infra.close() };
+  return {
+    services: { teams, tournaments, matches, standings },
+    readiness: () => infra.readiness(),
+    close: () => infra.close(),
+  };
 };
