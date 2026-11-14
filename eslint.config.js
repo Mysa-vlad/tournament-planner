@@ -12,7 +12,13 @@ export default tseslint.config(
       globals: globals.node,
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['*.js', '*.cjs', 'vitest.config.ts', 'stryker.config.mjs'],
+          allowDefaultProject: [
+            '*.js',
+            '*.cjs',
+            'vitest.config.ts',
+            'vitest.e2e.config.ts',
+            'stryker.config.mjs',
+          ],
         },
         tsconfigRootDir: import.meta.dirname,
       },

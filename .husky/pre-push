@@ -1,4 +1,4 @@
-# DoD A4-A6: межі модулів (spec §6), smoke-тест, збірка
+# DoD A4-A6 + spec-lab3 AC17: межі модулів, unit + інтеграційні з порогами покриття, збірка + E2E
 npm run audit:deps
-npm run test:smoke
-npm run build
+npm test
+npm run test:e2e
