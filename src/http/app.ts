@@ -30,7 +30,7 @@ export const createApp = (config: AppConfig): Express => {
   const teams: TeamsService = createTeamsService(teamsRepo, () => tournaments);
   tournaments = createTournamentsService(createInMemoryTournamentsRepository(), teams);
 
-  const matches = createMatchesService(createInMemoryMatchesRepository(), tournaments, teamsRepo);
+  const matches = createMatchesService(createInMemoryMatchesRepository(), tournaments, teams);
   const standings = createStandingsService(tournaments, teams, matches);
 
   const app = express();

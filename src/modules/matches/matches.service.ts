@@ -1,5 +1,5 @@
 import { DomainError, newId, type Id } from '../../shared/index.js';
-import type { TeamsRepository } from '../teams/teams.repository.js';
+import type { TeamsService } from '../teams/index.js';
 import type { TournamentsService } from '../tournaments/index.js';
 import { generateRoundRobin, type Match } from './matches.domain.js';
 import type { MatchesRepository } from './matches.repository.js';
@@ -19,7 +19,7 @@ export interface MatchesService {
 export const createMatchesService = (
   repo: MatchesRepository,
   tournaments: TournamentsService,
-  teamsRepo: TeamsRepository,
+  teams: TeamsService,
 ): MatchesService => ({
   // S2: старт турніру — генерація розкладу
   async startTournament(tournamentId) {
@@ -65,12 +65,15 @@ export const createMatchesService = (
 
   async getSchedule(tournamentId) {
     const matches = await repo.listByTournament(tournamentId);
-    return Promise.all(
-      matches.map(async (m) => ({
-        ...m,
-        homeTeamName: (await teamsRepo.findById(m.homeTeamId))?.name ?? '?',
-        awayTeamName: (await teamsRepo.findById(m.awayTeamId))?.name ?? '?',
-      })),
-    );
+    // D2: імена команд — через публічний сервіс teams, а не через його репозиторій
+    const names = new Map<Id, string>();
+    for (const id of new Set(matches.flatMap((m) => [m.homeTeamId, m.awayTeamId]))) {
+      names.set(id, (await teams.getTeam(id)).name);
+    }
+    return matches.map((m) => ({
+      ...m,
+      homeTeamName: names.get(m.homeTeamId) ?? '',
+      awayTeamName: names.get(m.awayTeamId) ?? '',
+    }));
   },
 });
