@@ -25,7 +25,8 @@
     "test": "vitest run --coverage",
     "test:unit": "vitest run test/unit",
     "test:integration": "vitest run test/integration",
-    "test:e2e": "npm run build && vitest run --config vitest.e2e.config.ts"
+    "test:e2e": "npm run build && vitest run --config vitest.e2e.config.ts",
+    "mutation": "stryker run"
   },
   "author": "Мусієнко Владислав (ІО-44)",
   "license": "MIT",
