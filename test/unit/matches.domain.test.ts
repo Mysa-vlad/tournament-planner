@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { generateRoundRobin } from '../../src/modules/matches/index.js';
+import { generateRoundRobin, isFinished } from '../../src/modules/matches/index.js';
 
 const ids = (n: number): string[] => Array.from({ length: n }, (_, i) => `t${String(i)}`);
 const pairKey = (a: string, b: string): string => [a, b].sort().join('-');
@@ -30,5 +30,23 @@ describe('generateRoundRobin (S2)', () => {
 
   test('дублікати id — помилка', () => {
     expect(() => generateRoundRobin(['a', 'b', 'a'])).toThrow(/unique/);
+  });
+});
+
+describe('isFinished', () => {
+  const base = {
+    id: 'm',
+    tournamentId: 't',
+    round: 1,
+    homeTeamId: 'a',
+    awayTeamId: 'b',
+  } as const;
+  test('лише finished з обома рахунками', () => {
+    expect(isFinished({ ...base, status: 'finished', homeGoals: 1, awayGoals: 0 })).toBe(true);
+    expect(isFinished({ ...base, status: 'scheduled', homeGoals: null, awayGoals: null })).toBe(
+      false,
+    );
+    expect(isFinished({ ...base, status: 'finished', homeGoals: null, awayGoals: 0 })).toBe(false);
+    expect(isFinished({ ...base, status: 'finished', homeGoals: 2, awayGoals: null })).toBe(false);
   });
 });

@@ -21,8 +21,8 @@ export const createStandingsService = (
     const results: FinishedResult[] = (await matches.listFinished(tournamentId)).map((m) => ({
       homeTeamId: m.homeTeamId,
       awayTeamId: m.awayTeamId,
-      homeGoals: m.homeGoals ?? 0,
-      awayGoals: m.awayGoals ?? 0,
+      homeGoals: m.homeGoals,
+      awayGoals: m.awayGoals,
     }));
     return computeStandings(teamList, results);
   },

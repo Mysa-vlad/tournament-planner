@@ -13,13 +13,24 @@ export interface Match {
   readonly awayGoals: number | null;
 }
 
+/** Завершений матч: рахунок гарантовано є (інваріант CHECK у БД, spec-lab2 §3). */
+export type FinishedMatch = Match & {
+  readonly status: 'finished';
+  readonly homeGoals: number;
+  readonly awayGoals: number;
+};
+
+export const isFinished = (m: Match): m is FinishedMatch =>
+  m.status === 'finished' && m.homeGoals !== null && m.awayGoals !== null;
+
 export interface Pairing {
   readonly round: number;
   readonly homeTeamId: Id;
   readonly awayTeamId: Id;
 }
 
-const BYE = null;
+/** «Вихідний» слот для непарного N; undefined, тож збігається з виходом за межі масиву. */
+const BYE = undefined;
 
 /**
  * S2: кругова система (circle method). Чиста функція (AC6).
@@ -38,14 +49,13 @@ export const generateRoundRobin = (teamIds: readonly Id[]): Pairing[] => {
     for (let i = 0; i < n / 2; i++) {
       const a = slots[i];
       const b = slots[n - 1 - i];
-      if (a === BYE || b === BYE || a === undefined || b === undefined) continue;
+      if (a === BYE || b === BYE) continue; // команда цього туру відпочиває
       // чергуємо господарів, щоб у команди не було всіх матчів удома
       const [homeTeamId, awayTeamId] = round % 2 === 0 ? [a, b] : [b, a];
       pairings.push({ round: round + 1, homeTeamId, awayTeamId });
     }
     // фіксуємо перший слот, решту обертаємо
-    const last = slots.pop();
-    if (last !== undefined) slots.splice(1, 0, last);
+    slots.splice(1, 0, ...slots.splice(-1));
   }
   return pairings;
 };
