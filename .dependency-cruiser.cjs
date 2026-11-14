@@ -47,6 +47,13 @@ module.exports = {
       from: { path: '^src/modules/matches/' },
       to: { path: '^src/modules/standings/' },
     },
+    {
+      name: 'D5-shared-kernel-is-pure',
+      comment: 'spec D5: shared не залежить від фреймворків і від інших шарів',
+      severity: 'error',
+      from: { path: '^src/shared/' },
+      to: { path: ['node_modules/express/', '^src/(modules|http|config)/'] },
+    },
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
