@@ -12,6 +12,7 @@ const json = (res: request.Response): Json => res.body as Json;
 
 let tournamentId = '';
 let teamId = '';
+let matchId = '';
 
 beforeAll(async () => {
   container = await createContainer({
@@ -56,5 +57,30 @@ describe('доступ: кожна операція запису без X-User-I
     expect(json(await request(app).get(`/tournaments/${tournamentId}`)).status).toBe(
       'registration',
     );
+  });
+});
+
+describe('ідемпотентність S3: «той самий» означає обидва числа (spec-lab2 §2)', () => {
+  test('2:1, потім 2:0 або 3:1 → 409; рахунок не змінюється', async () => {
+    const start = await request(app)
+      .post(`/tournaments/${tournamentId}/start`)
+      .set('x-user-id', ORG);
+    matchId = String((start.body as Json[])[0]?.id);
+    const put = (homeGoals: number, awayGoals: number): request.Test =>
+      request(app)
+        .put(`/matches/${matchId}/result`)
+        .set('x-user-id', ORG)
+        .send({ homeGoals, awayGoals });
+
+    expect((await put(2, 1)).status).toBe(200);
+    expect((await put(2, 0)).status).toBe(409); // збігається лише homeGoals
+    expect((await put(3, 1)).status).toBe(409); // збігається лише awayGoals
+    expect((await put(2, 1)).status).toBe(200); // справжній повтор
+    expect(
+      (await request(app).put(`/matches/${matchId}/result`).send({ homeGoals: 2, awayGoals: 1 }))
+        .status,
+    ).toBe(401);
+    const schedule = await request(app).get(`/tournaments/${tournamentId}/matches`);
+    expect((schedule.body as Json[])[0]).toMatchObject({ homeGoals: 2, awayGoals: 1 });
   });
 });
