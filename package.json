@@ -1,0 +1,43 @@
+{
+  "name": "tournament-planner",
+  "version": "0.1.0",
+  "description": "REST API для організації аматорських футбольних турнірів",
+  "private": true,
+  "type": "module",
+  "main": "dist/server.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:smoke": "node --import tsx --test test/smoke/*.test.ts",
+    "audit:deps": "depcruise src --config .dependency-cruiser.cjs",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run audit:deps && npm run test:smoke && npm run build"
+  },
+  "author": "Мусієнко Владислав (ІО-44)",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.3.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.20.5",
+    "dependency-cruiser": "^18.7.2",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.14.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.10.1",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2"
+  }
+}
