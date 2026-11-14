@@ -84,3 +84,38 @@ describe('ідемпотентність S3: «той самий» означа�
     expect((schedule.body as Json[])[0]).toMatchObject({ homeGoals: 2, awayGoals: 1 });
   });
 });
+
+describe('межі валідації (spec-lab2 §4, T5): 0 і 101 символ → 400, не 500 від CHECK у БД', () => {
+  const long = 'x'.repeat(101);
+  test.each([
+    ['/teams', { name: '' }, 'name'],
+    ['/teams', { name: '   ' }, 'name'],
+    ['/teams', { name: long }, 'name'],
+    ['/teams', { name: 'Ok', city: long }, 'city'],
+    ['/tournaments', { name: '', startsOn: '2026-12-01' }, 'name'],
+    ['/tournaments', { name: long, startsOn: '2026-12-01' }, 'name'],
+  ])('POST %s %j → 400 (%s)', async (path, body, field) => {
+    const res = await request(app).post(path).set('x-user-id', ORG).send(body);
+    expect(res.status).toBe(400);
+    expect(json(res).fields).toEqual([expect.objectContaining({ path: field })]);
+  });
+
+  test('гравець: порожнє і 101-символьне ім’я → 400; 100 символів — ок', async () => {
+    const post = (fullName: string, number: number): request.Test =>
+      request(app)
+        .post(`/teams/${teamId}/players`)
+        .set('x-user-id', ORG)
+        .send({ fullName, number });
+    expect((await post(' ', 1)).status).toBe(400);
+    expect((await post(long, 2)).status).toBe(400);
+    expect((await post('y'.repeat(100), 3)).status).toBe(201);
+  });
+
+  test('назва обрізається (trim) і зберігається без пробілів', async () => {
+    const res = await request(app)
+      .post('/teams')
+      .set('x-user-id', ORG)
+      .send({ name: '  Тризуб  ' });
+    expect(json(res).name).toBe('Тризуб');
+  });
+});
