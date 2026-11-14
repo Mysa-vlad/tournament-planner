@@ -50,3 +50,22 @@ describe('isFinished', () => {
     expect(isFinished({ ...base, status: 'finished', homeGoals: 2, awayGoals: null })).toBe(false);
   });
 });
+
+describe('баланс господар/гість (spec S2, T6)', () => {
+  const homeAwayBalance = (n: number): number[] => {
+    const balance = new Map(ids(n).map((id) => [id, 0]));
+    for (const p of generateRoundRobin(ids(n))) {
+      balance.set(p.homeTeamId, (balance.get(p.homeTeamId) ?? 0) + 1);
+      balance.set(p.awayTeamId, (balance.get(p.awayTeamId) ?? 0) - 1);
+    }
+    return [...balance.values()];
+  };
+
+  test.each(Array.from({ length: 19 }, (_, i) => i + 2))(
+    'N=%i: |домашні − виїзні| ≤ 1 (0 для непарного N)',
+    (n) => {
+      const limit = n % 2 === 0 ? 1 : 0;
+      for (const d of homeAwayBalance(n)) expect(Math.abs(d)).toBeLessThanOrEqual(limit);
+    },
+  );
+});

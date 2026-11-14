@@ -41,7 +41,8 @@ export const generateRoundRobin = (teamIds: readonly Id[]): Pairing[] => {
     throw new Error('Team ids must be unique');
   }
   const slots: (Id | typeof BYE)[] = [...teamIds];
-  if (slots.length % 2 === 1) slots.push(BYE);
+  // BYE — у фіксованому слоті: тоді для непарного N баланс господар/гість рівно 0
+  if (slots.length % 2 === 1) slots.unshift(BYE);
   const n = slots.length;
   const pairings: Pairing[] = [];
 
@@ -50,8 +51,10 @@ export const generateRoundRobin = (teamIds: readonly Id[]): Pairing[] => {
       const a = slots[i];
       const b = slots[n - 1 - i];
       if (a === BYE || b === BYE) continue; // команда цього туру відпочиває
-      // чергуємо господарів, щоб у команди не було всіх матчів удома
-      const [homeTeamId, awayTeamId] = round % 2 === 0 ? [a, b] : [b, a];
+      // spec S2: |домашні − виїзні| ≤ 1. Фіксований слот (i = 0) чергується за туром,
+      // решта пар — за парністю позиції; разом з обертанням це дає оптимальний баланс.
+      const aIsHome = i === 0 ? round % 2 === 0 : i % 2 === 1;
+      const [homeTeamId, awayTeamId] = aIsHome ? [a, b] : [b, a];
       pairings.push({ round: round + 1, homeTeamId, awayTeamId });
     }
     // фіксуємо перший слот, решту обертаємо
