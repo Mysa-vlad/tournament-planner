@@ -1,5 +1,5 @@
 // Аудит крайових випадків і поведінки на збоях (spec-lab2 §4). Запуск: npm run probe:edge
-import { api, startTestServer } from '../test/smoke/helpers.js';
+import { api, startTestServer } from '../test/integration/helpers.js';
 const rows = [
   '| джерело | GET /tournaments/not-a-uuid | POST /teams з тілом 200 КБ | БД закрито → GET | повторний close() |',
   '| --- | --- | --- | --- | --- |',

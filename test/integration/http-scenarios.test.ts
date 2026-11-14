@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { after, before, describe, test } from 'node:test';
+import { afterAll, beforeAll, describe, test } from 'vitest';
 import type { DataSource } from '../../src/config/env.js';
 import { api, startTestServer, type TestServer } from './helpers.js';
 
@@ -11,25 +11,25 @@ const SOURCES: readonly DataSource[] = (process.env.SMOKE_SOURCES ?? 'static,pg'
   .map((s) => s.trim() as DataSource);
 
 for (const dataSource of SOURCES) {
-  void describe(`smoke S1–S5 [${dataSource}]`, () => {
+  describe(`smoke S1–S5 [${dataSource}]`, () => {
     let srv: TestServer;
     let call: ReturnType<typeof api>;
     const ORG = 'org-alice';
 
-    before(async () => {
+    beforeAll(async () => {
       srv = await startTestServer({ dataSource });
       call = api(srv.baseUrl);
     });
-    after(() => srv.close());
+    afterAll(() => srv.close());
 
-    void test('AC2: GET /health → 200 і X-Request-Id', async () => {
+    test('AC2: GET /health → 200 і X-Request-Id', async () => {
       const res = await call('GET', '/health');
       assert.equal(res.status, 200);
       assert.equal(res.body.status, 'ok');
       assert.ok(res.headers.get('x-request-id'));
     });
 
-    void test('S1–S5 через API: заявки → старт → результати → таблиця → завершення', async () => {
+    test('S1–S5 через API: заявки → старт → результати → таблиця → завершення', async () => {
       // запис без ініціатора → 401
       assert.equal((await call('POST', '/teams', { body: { name: 'X' } })).status, 401);
 
@@ -131,7 +131,7 @@ for (const dataSource of SOURCES) {
       assert.equal((await call('GET', `/tournaments/${tid}`)).body.status, 'finished');
     });
 
-    void test('помилки: 404 сутності, 404 маршруту, 400 невалідний JSON', async () => {
+    test('помилки: 404 сутності, 404 маршруту, 400 невалідний JSON', async () => {
       const missing = await call('GET', '/tournaments/00000000-0000-4000-8000-000000000999');
       assert.equal(missing.status, 404);
       assert.ok(missing.body.requestId);
