@@ -74,3 +74,40 @@ describe('errorHandler (spec-lab2 §4, D8)', () => {
     });
   });
 });
+
+describe('errorHandler: не кожен об’єкт зі status — помилка клієнта (T5)', () => {
+  test('status 4xx, але expose: false → 500 без повідомлення', () => {
+    const internal = Object.assign(new Error('internal library detail'), {
+      status: 401,
+      expose: false,
+    });
+    expect(handle(internal)).toMatchObject({ status: 500, body: { error: 'INTERNAL' } });
+  });
+
+  test('status 5xx з expose: true → 500, а не цей статус', () => {
+    const err = Object.assign(new Error('bad gateway'), { status: 502, expose: true });
+    expect(handle(err).status).toBe(500);
+  });
+
+  test.each([400, 415, 499])('межі діапазону: status %i з expose → цей статус', (status) => {
+    const err = Object.assign(new Error('client'), { status, expose: true });
+    expect(handle(err).status).toBe(status);
+  });
+
+  test('без status, рядок замість Error, null → 500', () => {
+    expect(handle(Object.assign(new Error('x'), { expose: true })).status).toBe(500);
+    expect(handle('just a string').status).toBe(500);
+    expect(handle(null).status).toBe(500);
+  });
+
+  test('коди http-errors: 400 → VALIDATION, 415 → UNSUPPORTED_MEDIA_TYPE, інший 4xx → BAD_REQUEST', () => {
+    const mk = (status: number): Error => Object.assign(new Error('m'), { status, expose: true });
+    expect(handle(mk(400)).body).toMatchObject({ error: 'VALIDATION', message: 'm' });
+    expect(handle(mk(415)).body).toMatchObject({ error: 'UNSUPPORTED_MEDIA_TYPE' });
+    expect(handle(mk(422)).body).toMatchObject({ error: 'BAD_REQUEST' });
+  });
+
+  test('Retry-After лише для 503, не для інших доменних помилок', () => {
+    expect(handle(new DomainError('CONFLICT', 'c')).headers).toEqual({});
+  });
+});
