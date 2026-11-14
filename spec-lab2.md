@@ -48,6 +48,7 @@ check(home≠away), check(goals ≥ 0), unique(tournament_id, home_team_id, away
 | порушення інваріанта, гонка, дубль                            | `409 CONFLICT`                                          |
 | БД недоступна / збій з'єднання                                | `503 SOURCE_UNAVAILABLE` + `Retry-After`                |
 | транзієнтний конфлікт транзакції (40001/40P01)                | до 3 повторів з backoff, далі `503`                     |
+| повторний сигнал зупинки / повторний `close()` ресурсу        | ідемпотентно, процес завершується штатно (exit 0)       |
 | будь-що інше                                                  | `500 INTERNAL`, деталі лише в лозі                      |
 
 Тіло помилки: `{ error, message, requestId }`.
