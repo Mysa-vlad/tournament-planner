@@ -2,7 +2,7 @@
 
 # DEFENSE — Завдання 2: Робочий застосунок (прототип → БД)
 
-**PR:** _<посилання на PR `feat/lab2-app`>_ · Spec: [spec-lab2.md](spec-lab2.md) · Аудит:
+**PR:** [Mysa-vlad/tournament-planner#2](https://github.com/Mysa-vlad/tournament-planner/pull/2) · Spec: [spec-lab2.md](spec-lab2.md) · Аудит:
 [ai/04-lab2-audit.md](ai/04-lab2-audit.md)
 
 **1. Що я просив у AI.** Виконати Завдання 2 за умовою з Classroom: спершу сценарії S1–S5
