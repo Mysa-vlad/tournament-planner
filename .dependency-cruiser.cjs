@@ -26,6 +26,27 @@ module.exports = {
       from: { path: '\\.(service|domain)\\.ts$' },
       to: { path: 'node_modules/express/' },
     },
+    {
+      name: 'D4-teams-is-leaf',
+      comment: 'spec D4: teams не залежить від інших доменних модулів',
+      severity: 'error',
+      from: { path: '^src/modules/teams/' },
+      to: { path: '^src/modules/(tournaments|matches|standings)/' },
+    },
+    {
+      name: 'D4-tournaments-direction',
+      comment: 'spec D4 / граф §3: tournaments залежить лише від teams',
+      severity: 'error',
+      from: { path: '^src/modules/tournaments/' },
+      to: { path: '^src/modules/(matches|standings)/' },
+    },
+    {
+      name: 'D4-matches-direction',
+      comment: 'spec D4 / граф §3: matches не залежить від standings',
+      severity: 'error',
+      from: { path: '^src/modules/matches/' },
+      to: { path: '^src/modules/standings/' },
+    },
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
