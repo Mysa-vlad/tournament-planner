@@ -66,3 +66,13 @@ describe('тай-брейки S4 (T6): очки → різниця → заби�
     expect(loss).toMatchObject({ lost: 1, points: 0, goalsFor: 0, goalsAgainst: 2, goalDiff: -2 });
   });
 });
+
+describe('очки важливіші за різницю м’ячів (T6)', () => {
+  test('більше очок, але гірша різниця → все одно вище', () => {
+    const four = [...teams, { id: 'd', name: 'Delta' }];
+    // a: перемога 1:0 і поразка 0:5 → 3 очки, різниця −4; b: нічия 0:0 → 1 очко, різниця 0
+    const table = computeStandings(four, [r('a', 'c', 1, 0), r('d', 'a', 5, 0), r('b', 'c', 0, 0)]);
+    const pos = (id: string): number => table.findIndex((row) => row.teamId === id);
+    expect(pos('a')).toBeLessThan(pos('b'));
+  });
+});
