@@ -42,3 +42,27 @@ describe('computeStandings (S4)', () => {
     expect(() => computeStandings(teams, [r('a', 'zzz', 1, 0)])).toThrow(/unknown team zzz/);
   });
 });
+
+describe('тай-брейки S4 (T6): очки → різниця → забиті → назва', () => {
+  test('рівні очки й різниця: вище той, хто більше забив', () => {
+    // a: 3:2 проти c (+1, 3 забиті); b: 1:0 проти c (+1, 1 забитий) — очки й різниця рівні
+    const table = computeStandings(teams, [r('a', 'c', 3, 2), r('b', 'c', 1, 0)]);
+    expect(table.map((row) => row.teamId)).toEqual(['a', 'b', 'c']);
+    // дзеркально: якщо Bravo забив більше — Bravo вище, незважаючи на алфавіт
+    const mirrored = computeStandings(teams, [r('a', 'c', 1, 0), r('b', 'c', 3, 2)]);
+    expect(mirrored.map((row) => row.teamId)).toEqual(['b', 'a', 'c']);
+  });
+
+  test('усе рівне → за назвою; рахунки поразок і нічиїх додаються коректно', () => {
+    const table = computeStandings(
+      [
+        { id: 'z', name: 'Zorya' },
+        { id: 'y', name: 'Arsenal' },
+      ],
+      [r('z', 'y', 1, 1)],
+    );
+    expect(table.map((row) => row.teamName)).toEqual(['Arsenal', 'Zorya']);
+    const loss = computeStandings(teams, [r('a', 'b', 0, 2)]).find((row) => row.teamId === 'a');
+    expect(loss).toMatchObject({ lost: 1, points: 0, goalsFor: 0, goalsAgainst: 2, goalDiff: -2 });
+  });
+});
