@@ -14,6 +14,7 @@ export const createStandingsService = (
   matches: MatchesService,
 ): StandingsService => ({
   async getStandings(tournamentId) {
+    await tournaments.get(tournamentId);
     const teamIds = await tournaments.listTeamIds(tournamentId);
     const teamList = await Promise.all(teamIds.map((id) => teams.getTeam(id)));
     const results: FinishedResult[] = (await matches.listFinished(tournamentId)).map((m) => ({

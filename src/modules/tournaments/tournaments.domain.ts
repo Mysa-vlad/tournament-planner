@@ -7,6 +7,8 @@ export interface Tournament {
   readonly name: string;
   readonly status: TournamentStatus;
   readonly startsOn: string; // ISO date
+  /** ініціатор створення; лише він стартує турнір і вносить результати (spec-lab2 §2) */
+  readonly organizerId: string;
 }
 
 export interface TournamentEntry {

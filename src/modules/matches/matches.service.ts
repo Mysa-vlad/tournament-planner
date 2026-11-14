@@ -1,4 +1,4 @@
-import { DomainError, newId, type Id } from '../../shared/index.js';
+import { DomainError, logger, newId, type Id, type UnitOfWork } from '../../shared/index.js';
 import type { TeamsService } from '../teams/index.js';
 import type { TournamentsService } from '../tournaments/index.js';
 import { generateRoundRobin, type Match } from './matches.domain.js';
@@ -10,62 +10,88 @@ export interface ScheduledMatchView extends Match {
 }
 
 export interface MatchesService {
-  startTournament(tournamentId: Id): Promise<Match[]>;
+  /** S2; created = false, якщо турнір уже стартував (ідемпотентний повтор) */
+  startTournament(tournamentId: Id): Promise<{ matches: Match[]; created: boolean }>;
+  /** S3 + S5; повтор із тим самим рахунком — не помилка (ідемпотентність) */
   recordResult(matchId: Id, homeGoals: number, awayGoals: number): Promise<Match>;
   listFinished(tournamentId: Id): Promise<Match[]>;
   getSchedule(tournamentId: Id): Promise<ScheduledMatchView[]>;
 }
 
-export const createMatchesService = (
-  repo: MatchesRepository,
-  tournaments: TournamentsService,
-  teams: TeamsService,
-): MatchesService => ({
-  // S2: старт турніру — генерація розкладу
-  async startTournament(tournamentId) {
-    const teamIds = await tournaments.listTeamIds(tournamentId);
-    if (teamIds.length < 2) {
-      throw new DomainError('CONFLICT', 'At least 2 teams are required to start');
-    }
-    await tournaments.changeStatus(tournamentId, 'in_progress');
-    const matches: Match[] = generateRoundRobin(teamIds).map((p) => ({
-      id: newId(),
-      tournamentId,
-      ...p,
-      status: 'scheduled',
-      homeGoals: null,
-      awayGoals: null,
-    }));
-    await repo.saveMany(matches);
-    return matches;
-  },
+export interface MatchesDeps {
+  readonly repo: MatchesRepository;
+  readonly tournaments: TournamentsService;
+  readonly teams: TeamsService;
+  readonly uow: UnitOfWork;
+}
 
-  // S3 + S5: результат матчу і автоматичне завершення турніру
-  async recordResult(matchId, homeGoals, awayGoals) {
-    if (![homeGoals, awayGoals].every((g) => Number.isInteger(g) && g >= 0)) {
-      throw new DomainError('VALIDATION', 'Goals must be non-negative integers');
-    }
-    const match = await repo.findById(matchId);
-    if (!match) throw new DomainError('NOT_FOUND', `Match ${matchId} not found`);
-    if (match.status !== 'scheduled') throw new DomainError('CONFLICT', 'Match already finished');
+const sameScore = (m: Match, homeGoals: number, awayGoals: number): boolean =>
+  m.homeGoals === homeGoals && m.awayGoals === awayGoals;
 
-    const finished: Match = { ...match, status: 'finished', homeGoals, awayGoals };
-    await repo.save(finished);
+export const createMatchesService = ({
+  repo,
+  tournaments,
+  teams,
+  uow,
+}: MatchesDeps): MatchesService => ({
+  // S2: старт турніру. Перехід статусу і вставка розкладу — одна атомарна операція (spec-lab2 §3).
+  startTournament: (tournamentId) =>
+    uow.run(async () => {
+      const t = await tournaments.assertOrganizer(tournamentId);
+      if (t.status !== 'registration') {
+        const existing = await repo.listByTournament(tournamentId);
+        if (existing.length > 0) return { matches: existing, created: false };
+        throw new DomainError('CONFLICT', `Tournament is ${t.status}`);
+      }
+      const teamIds = await tournaments.listTeamIds(tournamentId);
+      if (teamIds.length < 2) {
+        throw new DomainError('CONFLICT', 'At least 2 teams are required to start');
+      }
+      const moved = await tournaments.tryTransition(tournamentId, 'registration', 'in_progress');
+      if (!moved) {
+        // паралельний старт виграв гонку — повертаємо його розклад (AC9)
+        return { matches: await repo.listByTournament(tournamentId), created: false };
+      }
+      const matches: Match[] = generateRoundRobin(teamIds).map((p) => ({
+        id: newId(),
+        tournamentId,
+        ...p,
+        status: 'scheduled',
+        homeGoals: null,
+        awayGoals: null,
+      }));
+      await repo.insertMany(matches);
+      logger.info({ tournamentId, matches: matches.length }, 'tournament started');
+      return { matches, created: true };
+    }),
 
-    const all = await repo.listByTournament(match.tournamentId);
-    if (all.every((m) => m.status === 'finished')) {
-      await tournaments.changeStatus(match.tournamentId, 'finished');
-    }
-    return finished;
-  },
+  // S3 + S5
+  recordResult: (matchId, homeGoals, awayGoals) =>
+    uow.run(async () => {
+      const match = await repo.findById(matchId);
+      if (!match) throw new DomainError('NOT_FOUND', `Match ${matchId} not found`);
+      await tournaments.assertOrganizer(match.tournamentId);
+
+      const finished = await repo.finishIfScheduled(matchId, homeGoals, awayGoals);
+      if (!finished) {
+        const current = (await repo.findById(matchId)) ?? match;
+        if (sameScore(current, homeGoals, awayGoals)) return current; // повтор того ж запиту
+        throw new DomainError('CONFLICT', 'Match already has a different result');
+      }
+      if ((await repo.countUnfinished(match.tournamentId)) === 0) {
+        await tournaments.tryTransition(match.tournamentId, 'in_progress', 'finished');
+        logger.info({ tournamentId: match.tournamentId }, 'tournament finished');
+      }
+      return finished;
+    }),
 
   async listFinished(tournamentId) {
     return (await repo.listByTournament(tournamentId)).filter((m) => m.status === 'finished');
   },
 
   async getSchedule(tournamentId) {
+    await tournaments.get(tournamentId);
     const matches = await repo.listByTournament(tournamentId);
-    // D2: імена команд — через публічний сервіс teams, а не через його репозиторій
     const names = new Map<Id, string>();
     for (const id of new Set(matches.flatMap((m) => [m.homeTeamId, m.awayTeamId]))) {
       names.set(id, (await teams.getTeam(id)).name);
