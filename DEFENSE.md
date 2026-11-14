@@ -2,7 +2,7 @@
 
 # DEFENSE — Завдання 1: Фундамент і структура застосунку
 
-**PR:** _<посилання на PR `feat/lab1-foundation` → `main`>_ · Проєкт: Tournament Planner,
+**PR:** [Mysa-vlad/tournament-planner#1](https://github.com/Mysa-vlad/tournament-planner/pull/1) · Проєкт: Tournament Planner,
 REST API для аматорських футбольних турнірів ([README](README.md)).
 
 **1. Що я просив у AI.** Виконати Завдання 1 за умовою з Classroom і з урахуванням відгуку
