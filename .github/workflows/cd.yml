@@ -1,0 +1,75 @@
+# spec-lab4 §4: CD на стейдж. Запускається лише після ЗЕЛЕНОГО CI на main.
+# Порядок: міграції структури → даних → індекси → деплой (blue-green на Render) → перевірка /version.
+name: CD (staging)
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false # деплой не переривається на середині
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: deploy-staging
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+      LOG_LEVEL: info
+    steps:
+      - name: Секрети налаштовано
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          URL: ${{ vars.STAGING_URL }}
+        run: |
+          missing=0
+          [ -n "$DATABASE_URL" ] || { echo "::error::secret STAGING_DATABASE_URL is not set"; missing=1; }
+          [ -n "$HOOK" ] || { echo "::error::secret RENDER_DEPLOY_HOOK_URL is not set"; missing=1; }
+          [ -n "$URL" ] || { echo "::error::variable STAGING_URL is not set"; missing=1; }
+          exit $missing
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 1. Міграції структури (блокуючі, сумісні назад)
+        run: npm run db:migrate -- schema
+      - name: 2. Міграції даних (неблокуючі)
+        run: npm run db:migrate -- data
+      - name: 3. Індекси (CONCURRENTLY, окремий крок)
+        run: npm run db:migrate -- indexes
+      - name: 4. Деплой коміту на Render (blue-green за /health/ready)
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl -fsS -X POST "${HOOK}&ref=${SHA}" -o /dev/null
+      - name: 5. Перевірка — стейдж віддає SHA цього коміту
+        env:
+          URL: ${{ vars.STAGING_URL }}
+        run: |
+          for i in $(seq 1 60); do
+            got=$(curl -fsS "$URL/version" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).sha)}catch{}})" || true)
+            echo "attempt $i: deployed=$got expected=$SHA"
+            if [ "$got" = "$SHA" ]; then
+              curl -fsS "$URL/health/ready"; echo
+              echo "### Задеплоєно \`$SHA\` → $URL/version" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::staging did not report $SHA within 15 minutes"
+          exit 1
