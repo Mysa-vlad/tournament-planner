@@ -2,8 +2,9 @@
 name: CI
 
 on:
+  # PR у будь-яку гілку (стек PR завдань і PR аудиту теж перевіряються);
+  # обов'язковими статуси є лише для main (правило гілки)
   pull_request:
-    branches: [main]
   push:
     branches: [main]
 
