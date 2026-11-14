@@ -5,6 +5,8 @@ import type { TeamsRepository } from './teams.repository.js';
 export interface TeamsService {
   createTeam(input: { name: string; city: string }): Promise<Team>;
   getTeam(id: Id): Promise<Team>;
+  /** D9: батч-читання; кидає NOT_FOUND, якщо бракує хоч однієї команди */
+  getTeamsByIds(ids: readonly Id[]): Promise<Team[]>;
   listTeams(): Promise<Team[]>;
   listPlayers(teamId: Id): Promise<Player[]>;
   addPlayer(teamId: Id, input: { fullName: string; number: number }): Promise<Player>;
@@ -27,6 +29,15 @@ export const createTeamsService = (repo: TeamsRepository): TeamsService => {
       return team;
     },
     getTeam,
+    async getTeamsByIds(ids) {
+      const unique = [...new Set(ids)];
+      const found = await repo.findByIds(unique);
+      if (found.length !== unique.length) {
+        const missing = unique.filter((id) => !found.some((t) => t.id === id));
+        throw new DomainError('NOT_FOUND', `Teams not found: ${missing.join(', ')}`);
+      }
+      return found;
+    },
     listTeams: () => repo.list(),
     async listPlayers(teamId) {
       await getTeam(teamId);

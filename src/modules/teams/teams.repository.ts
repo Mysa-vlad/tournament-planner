@@ -4,6 +4,8 @@ import type { Player, Team } from './teams.domain.js';
 /** Контракт сховища: реалізації — in-memory (прототип) і PostgreSQL (teams.pg-repository.ts). */
 export interface TeamsRepository {
   findById(id: Id): Promise<Team | undefined>;
+  /** D9: один запит на будь-яку кількість id */
+  findByIds(ids: readonly Id[]): Promise<Team[]>;
   list(): Promise<Team[]>;
   insert(team: Team): Promise<void>;
   listPlayers(teamId: Id): Promise<Player[]>;
@@ -23,6 +25,7 @@ export const createInMemoryTeamsRepository = (
   const players = new Map<Id, Player>(seed.players.map((p) => [p.id, p]));
   return {
     findById: (id) => Promise.resolve(teams.get(id)),
+    findByIds: (ids) => Promise.resolve(ids.flatMap((id) => teams.get(id) ?? [])),
     list: () => Promise.resolve([...teams.values()]),
     insert: (team) => {
       teams.set(team.id, team);

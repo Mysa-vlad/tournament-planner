@@ -23,6 +23,13 @@ export const createPgTeamsRepository = (db: Database): TeamsRepository => ({
     const [row] = await db.query<Team>(sql`SELECT id, name, city FROM teams WHERE id = ${id}`);
     return row;
   },
+  // D9: батч замість N окремих SELECT
+  async findByIds(ids) {
+    if (ids.length === 0) return [];
+    return db.query<Team>(
+      sql`SELECT id, name, city FROM teams WHERE id = ANY(${[...ids]}::uuid[])`,
+    );
+  },
   list: () => db.query<Team>(sql`SELECT id, name, city FROM teams ORDER BY name`),
   async insert(team) {
     await db.query(

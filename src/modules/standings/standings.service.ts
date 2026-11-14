@@ -16,7 +16,8 @@ export const createStandingsService = (
   async getStandings(tournamentId) {
     await tournaments.get(tournamentId);
     const teamIds = await tournaments.listTeamIds(tournamentId);
-    const teamList = await Promise.all(teamIds.map((id) => teams.getTeam(id)));
+    // D9: один запит замість Promise.all(getTeam) — N+1
+    const teamList = await teams.getTeamsByIds(teamIds);
     const results: FinishedResult[] = (await matches.listFinished(tournamentId)).map((m) => ({
       homeTeamId: m.homeTeamId,
       awayTeamId: m.awayTeamId,

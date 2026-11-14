@@ -92,10 +92,11 @@ export const createMatchesService = ({
   async getSchedule(tournamentId) {
     await tournaments.get(tournamentId);
     const matches = await repo.listByTournament(tournamentId);
-    const names = new Map<Id, string>();
-    for (const id of new Set(matches.flatMap((m) => [m.homeTeamId, m.awayTeamId]))) {
-      names.set(id, (await teams.getTeam(id)).name);
-    }
+    // D9: усі назви команд одним запитом (було: по запиту на команду — N+1)
+    const teamList = await teams.getTeamsByIds(
+      matches.flatMap((m) => [m.homeTeamId, m.awayTeamId]),
+    );
+    const names = new Map<Id, string>(teamList.map((t) => [t.id, t.name]));
     return matches.map((m) => ({
       ...m,
       homeTeamName: names.get(m.homeTeamId) ?? '',
