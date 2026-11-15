@@ -3,7 +3,7 @@
 # DEFENSE — Завдання 4: CI/CD і розгортання
 
 **PR:** [Mysa-vlad/tournament-planner#4](https://github.com/Mysa-vlad/tournament-planner/pull/4)
-· Spec: [spec-lab4.md](spec-lab4.md) · Стейдж: _<URL стейджу>_/version
+· Spec: [spec-lab4.md](spec-lab4.md) · Стейдж: [tournament-planner-staging.onrender.com/version](https://tournament-planner-staging.onrender.com/version)
 
 **1. Що я просив у AI.** Налаштувати CI, що блокує merge, CD `main` → публічний стейдж з
 `/version`, міграції без простою, і довести аудитом, що CI справді падає. Хостинг і захист
@@ -31,6 +31,8 @@
   окремо. На PostgreSQL-сервері застосунок під час старту не мігрує, а `/health/ready`
   пускає трафік лише на готовий інстанс (blue-green)
   ([`adr/0008`](adr/0008-zero-downtime-migrations.md)).
+- Чесне обмеження Render Free: zero-downtime доступний лише в платних планах. Readiness і
+  міграції до деплою реалізовано, але на Free перемикання може мати коротку паузу.
 - Чесне обмеження: у правилі гілки є обхід для адміністратора (лише через PR), бо PR
   #1–#3 відкрито до появи CI. Після їх merge обхід прибирається.
 
