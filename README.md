@@ -30,5 +30,36 @@ Tournament Planner вирішує це так:
 - [spec.md](spec.md): специфікація (модулі, дані, сценарії, критерії прийняття)
 - [standards/](standards/): інженерні стандарти проєкту
 - [adr/](adr/): архітектурні рішення (MADR)
-- [DEFENSE.md](DEFENSE.md): захист поточного завдання
+- [DEFENSE.md](DEFENSE.md) (завдання 1), [DEFENSE-lab2.md](DEFENSE-lab2.md) (завдання 2): захист
 - [ai/](ai/): слід промптів до AI
+
+## Запуск
+
+Потрібен Node.js 22. Окремий сервер БД не потрібен: PostgreSQL працює в процесі
+(PGlite, [ADR 0004](adr/0004-postgres-pglite-raw-sql.md)).
+
+```bash
+npm ci
+npm run dev           # PostgreSQL (PGlite), дані в ./.data/pg
+npm run dev:static    # прототип на статичних даних (.env.static)
+npm run check         # формат, лінт, типи, межі модулів, smoke (static + pg), збірка
+```
+
+Змінні середовища: `PORT` (3000), `DATA_SOURCE` (`pg` | `static`), `DATABASE_URL`
+(`./.data/pg` або `memory://`), `LOG_LEVEL`.
+
+## API (Завдання 2)
+
+Операції запису потребують заголовка `X-User-Id` (ініціатор). Кожна відповідь має
+`X-Request-Id`. Повна поведінка й помилки описані в [spec-lab2.md](spec-lab2.md).
+
+| Метод  | Шлях                           | Що робить                              |
+| ------ | ------------------------------ | -------------------------------------- |
+| `POST` | `/teams`, `/teams/:id/players` | команда, гравець                       |
+| `POST` | `/tournaments`                 | турнір (організатор = `X-User-Id`)     |
+| `POST` | `/tournaments/:id/entries`     | S1 заявка (ідемпотентно)               |
+| `POST` | `/tournaments/:id/start`       | S2 розклад «кожен з кожним» (атомарно) |
+| `PUT`  | `/matches/:id/result`          | S3 результат, S5 автозавершення        |
+| `GET`  | `/tournaments/:id/matches`     | розклад                                |
+| `GET`  | `/tournaments/:id/standings`   | S4 турнірна таблиця                    |
+| `GET`  | `/health`                      | перевірка стану                        |

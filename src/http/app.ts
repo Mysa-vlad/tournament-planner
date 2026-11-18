@@ -1,43 +1,31 @@
 import express, { type Express } from 'express';
-import type { AppConfig } from '../config/env.js';
-import {
-  createInMemoryMatchesRepository,
-  createMatchesRouter,
-  createMatchesService,
-} from '../modules/matches/index.js';
-import { createStandingsRouter, createStandingsService } from '../modules/standings/index.js';
-import {
-  createInMemoryTeamsRepository,
-  createTeamsRouter,
-  createTeamsService,
-} from '../modules/teams/index.js';
-import {
-  createInMemoryTournamentsRepository,
-  createTournamentsRouter,
-  createTournamentsService,
-} from '../modules/tournaments/index.js';
+import type { Services } from '../composition.js';
+import { createMatchesRouter } from '../modules/matches/index.js';
+import { createStandingsRouter } from '../modules/standings/index.js';
+import { createTeamsRouter } from '../modules/teams/index.js';
+import { createTournamentsRouter } from '../modules/tournaments/index.js';
+import { contextMiddleware } from './context-middleware.js';
 import { errorHandler } from './error-handler.js';
 
-/** Composition root: тут і лише тут модулі з'єднуються між собою (ручний DI). */
-export const createApp = (config: AppConfig): Express => {
-  // порядок створення = напрям графа залежностей spec §3 (D4): teams → tournaments → matches → standings
-  const teams = createTeamsService(createInMemoryTeamsRepository());
-  const tournaments = createTournamentsService(createInMemoryTournamentsRepository(), teams);
-  const matches = createMatchesService(createInMemoryMatchesRepository(), tournaments, teams);
-  const standings = createStandingsService(tournaments, teams, matches);
-
+/** HTTP-рівень: знає лише про маршрути й формат; сервіси приходять готовими з composition root. */
+export const createApp = (services: Services, info: { version: string }): Express => {
   const app = express();
-  app.use(express.json());
+  app.disable('x-powered-by');
+  app.use(contextMiddleware);
+  app.use(express.json({ limit: '100kb' }));
 
   app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', version: config.version });
+    res.json({ status: 'ok', version: info.version });
   });
 
-  app.use('/teams', createTeamsRouter(teams));
-  app.use('/tournaments', createTournamentsRouter(tournaments));
-  app.use('/', createMatchesRouter(matches));
-  app.use('/', createStandingsRouter(standings));
+  app.use('/teams', createTeamsRouter(services.teams));
+  app.use('/tournaments', createTournamentsRouter(services.tournaments));
+  app.use('/', createMatchesRouter(services.matches));
+  app.use('/', createStandingsRouter(services.standings));
 
+  app.use((_req, res) => {
+    res.status(404).json({ error: 'NOT_FOUND', message: 'Route not found' });
+  });
   app.use(errorHandler);
   return app;
 };

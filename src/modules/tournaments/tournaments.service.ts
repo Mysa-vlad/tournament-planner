@@ -1,4 +1,4 @@
-import { DomainError, newId, type Id } from '../../shared/index.js';
+import { DomainError, logger, newId, requireUserId, type Id } from '../../shared/index.js';
 import type { TeamsService } from '../teams/index.js';
 import {
   canTransition,
@@ -12,9 +12,12 @@ export interface TournamentsService {
   create(input: { name: string; startsOn: string }): Promise<Tournament>;
   get(id: Id): Promise<Tournament>;
   list(): Promise<Tournament[]>;
-  registerTeam(tournamentId: Id, teamId: Id): Promise<TournamentEntry>;
+  registerTeam(tournamentId: Id, teamId: Id): Promise<{ entry: TournamentEntry; created: boolean }>;
   listTeamIds(tournamentId: Id): Promise<Id[]>;
-  changeStatus(tournamentId: Id, to: TournamentStatus): Promise<Tournament>;
+  /** доступ: лише організатор турніру (spec-lab2 §2) → інакше FORBIDDEN */
+  assertOrganizer(tournamentId: Id): Promise<Tournament>;
+  /** compare-and-set переходу статусу; false — якщо статус уже змінився (гонка) */
+  tryTransition(tournamentId: Id, from: TournamentStatus, to: TournamentStatus): Promise<boolean>;
 }
 
 export const createTournamentsService = (
@@ -29,43 +32,54 @@ export const createTournamentsService = (
 
   return {
     async create({ name, startsOn }) {
-      if (name.trim() === '') throw new DomainError('VALIDATION', 'Tournament name is required');
-      const t: Tournament = { id: newId(), name: name.trim(), status: 'registration', startsOn };
-      await repo.save(t);
+      const organizerId = requireUserId();
+      const t: Tournament = {
+        id: newId(),
+        name: name.trim(),
+        status: 'registration',
+        startsOn,
+        organizerId,
+      };
+      await repo.insert(t);
+      logger.info({ tournamentId: t.id }, 'tournament created');
       return t;
     },
     get,
     list: () => repo.list(),
-    // S1: заявка команди
+
+    // S1: заявка команди (ідемпотентно, AC9)
     async registerTeam(tournamentId, teamId) {
+      requireUserId();
       const t = await get(tournamentId);
       if (t.status !== 'registration') {
         throw new DomainError('CONFLICT', 'Registration is closed');
       }
       await teams.getTeam(teamId);
-      const entries = await repo.listEntries(tournamentId);
-      if (entries.some((e) => e.teamId === teamId)) {
-        throw new DomainError('CONFLICT', 'Team is already registered');
-      }
-      const entry: TournamentEntry = {
+      return repo.insertEntryIfAbsent({
         tournamentId,
         teamId,
         registeredAt: new Date().toISOString(),
-      };
-      await repo.saveEntry(entry);
-      return entry;
+      });
     },
+
     async listTeamIds(tournamentId) {
       return (await repo.listEntries(tournamentId)).map((e) => e.teamId);
     },
-    async changeStatus(tournamentId, to) {
+
+    async assertOrganizer(tournamentId) {
+      const userId = requireUserId();
       const t = await get(tournamentId);
-      if (!canTransition(t.status, to)) {
-        throw new DomainError('CONFLICT', `Cannot change status ${t.status} -> ${to}`);
+      if (t.organizerId !== userId) {
+        throw new DomainError('FORBIDDEN', 'Only the tournament organizer can do this');
       }
-      const updated: Tournament = { ...t, status: to };
-      await repo.save(updated);
-      return updated;
+      return t;
+    },
+
+    async tryTransition(tournamentId, from, to) {
+      if (!canTransition(from, to)) {
+        throw new DomainError('CONFLICT', `Cannot change status ${from} -> ${to}`);
+      }
+      return repo.transitionStatus(tournamentId, from, to);
     },
   };
 };

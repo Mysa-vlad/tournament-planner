@@ -1,0 +1,11 @@
+# Доказ AC10 / D7: requestId і userId у кожному лозі, зокрема шару БД
+# Відтворення: DATA_SOURCE=pg DATABASE_URL=memory:// LOG_LEVEL=debug npx tsx src/server.ts
+#   curl -X POST :3000/teams -H 'x-user-id: org-alice' -H 'x-request-id: demo-req-0001' -d '{"name":"Raketa"}'
+#   curl :3000/tournaments/00000000-0000-4000-8000-000000000999 -H 'x-request-id: demo-req-0002'
+# level 20 = debug (src/db), 30 = info (сервіс / HTTP). Жодна функція не отримує requestId параметром.
+
+{"level":20,"time":1794651080025,"requestId":"demo-req-0001","userId":"org-alice","sql":"INSERT INTO teams (id, name, city) VALUES ($1, $2, $3)","ms":1,"msg":"db query"}
+{"level":30,"time":1794651080025,"requestId":"demo-req-0001","userId":"org-alice","teamId":"e791fcc5-c43f-42e8-93c9-698522813137","msg":"team created"}
+{"level":30,"time":1794651080025,"requestId":"demo-req-0001","userId":"org-alice","method":"POST","path":"/teams","status":201,"durationMs":15,"queries":1,"msg":"request completed"}
+{"level":20,"time":1794651080058,"requestId":"demo-req-0002","sql":"SELECT id, name, status, starts_on::text AS starts_on, organizer_id FROM tournaments WHERE id = $1","ms":1,"msg":"db query"}
+{"level":30,"time":1794651080059,"requestId":"demo-req-0002","method":"GET","path":"/tournaments/00000000-0000-4000-8000-000000000999","status":404,"durationMs":2,"queries":1,"msg":"request completed"}
