@@ -62,6 +62,10 @@ describe('createStandings', () => {
     await zeroTtl.get('t1');
     expect(source.calls).toBe(4);
     noCache.invalidate('t1'); // без кешу — нічого не ламає
+    const ttlWithoutCache = createStandings({ source, ttlMs: 60_000 });
+    await ttlWithoutCache.get('t1');
+    await ttlWithoutCache.get('t1');
+    expect(source.calls).toBe(6);
   });
 
   test('кеш: повтор у межах TTL не читає джерело; після TTL — читає', async () => {

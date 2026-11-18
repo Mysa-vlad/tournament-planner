@@ -85,12 +85,12 @@ describe('очки важливіші за різницю м’ячів (T6)', (
 });
 
 describe('правила очок передаються ззовні (DI, spec-lab5 AC28)', () => {
-  test('інші правила (2 за перемогу) змінюють лише нарахування', () => {
+  test('інші правила (2 за перемогу, −1 за поразку) змінюють лише нарахування', () => {
     const table = compute(
       { teams, results: [r('a', 'b', 1, 0), r('b', 'c', 2, 2)] },
-      { win: 2, draw: 1, loss: 0 },
+      { win: 2, draw: 1, loss: -1 },
     );
     const byId = Object.fromEntries(table.map((row) => [row.teamId, row.points]));
-    expect(byId).toEqual({ a: 2, b: 1, c: 1 });
+    expect(byId).toEqual({ a: 2, b: 0, c: 1 }); // b: поразка −1 і нічия +1
   });
 });
