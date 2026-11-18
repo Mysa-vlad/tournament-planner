@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { loadConfig } from '../../src/config/env.js';
+import { loadConfig, readPackageVersion } from '../../src/config/env.js';
 import {
   countQuery,
   currentContext,
@@ -9,7 +9,7 @@ import {
 
 describe('loadConfig', () => {
   test('значення за замовчуванням', () => {
-    expect(loadConfig({})).toEqual({
+    expect(loadConfig({}, () => undefined)).toEqual({
       port: 3000,
       version: '0.0.0',
       gitSha: 'unknown',
@@ -43,6 +43,21 @@ describe('loadConfig', () => {
     });
     // явний GIT_SHA має пріоритет
     expect(loadConfig({ GIT_SHA: 'x', RENDER_GIT_COMMIT: 'y' }).gitSha).toBe('x');
+  });
+
+  // регресія першого CD-прогону: Dockerfile ставив GIT_SHA=unknown, і /version віддавав 'unknown'
+  test('заглушка чи порожній GIT_SHA не перекриває RENDER_GIT_COMMIT (spec-lab4 AC19)', () => {
+    expect(loadConfig({ GIT_SHA: 'unknown', RENDER_GIT_COMMIT: 'abc123' }).gitSha).toBe('abc123');
+    expect(loadConfig({ GIT_SHA: '', RENDER_GIT_COMMIT: 'abc123' }).gitSha).toBe('abc123');
+    expect(loadConfig({ GIT_SHA: '  ', RENDER_GIT_COMMIT: 'abc123' }).gitSha).toBe('abc123');
+    expect(loadConfig({ GIT_SHA: 'unknown' }).gitSha).toBe('unknown');
+  });
+
+  test('версія з package.json, коли npm не задав npm_package_version (запуск node у контейнері)', () => {
+    expect(loadConfig({}, () => '9.9.9').version).toBe('9.9.9');
+    expect(loadConfig({ npm_package_version: '' }, () => '9.9.9').version).toBe('9.9.9');
+    expect(readPackageVersion()).toMatch(/^\d+\.\d+\.\d+/);
+    expect(readPackageVersion(new URL('file:///does/not/exist.json'))).toBeUndefined();
   });
 
   test.each(['0', '-1', '3.5', 'abc'])('невалідний PORT=%s → помилка', (port) => {

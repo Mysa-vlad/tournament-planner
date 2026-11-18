@@ -16,8 +16,9 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY migrations ./migrations
-# SHA для /version, якщо платформа не передає його сама (Render передає RENDER_GIT_COMMIT)
-ARG GIT_SHA=unknown
+# SHA для /version, якщо платформа не передає його сама (Render передає RENDER_GIT_COMMIT).
+# Без значення за замовчуванням: заглушка "unknown" перекривала RENDER_GIT_COMMIT (spec-lab4 AC19)
+ARG GIT_SHA
 ENV GIT_SHA=${GIT_SHA}
 USER node
 EXPOSE 3000
