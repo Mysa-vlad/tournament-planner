@@ -1,7 +1,12 @@
 import { DomainError, logger, newId, type Id, type UnitOfWork } from '../../shared/index.js';
 import type { TeamsService } from '../teams/index.js';
 import type { TournamentsService } from '../tournaments/index.js';
-import { generateRoundRobin, type Match } from './matches.domain.js';
+import {
+  generateRoundRobin,
+  isFinished,
+  type FinishedMatch,
+  type Match,
+} from './matches.domain.js';
 import type { MatchesRepository } from './matches.repository.js';
 
 export interface ScheduledMatchView extends Match {
@@ -14,7 +19,7 @@ export interface MatchesService {
   startTournament(tournamentId: Id): Promise<{ matches: Match[]; created: boolean }>;
   /** S3 + S5; повтор із тим самим рахунком — не помилка (ідемпотентність) */
   recordResult(matchId: Id, homeGoals: number, awayGoals: number): Promise<Match>;
-  listFinished(tournamentId: Id): Promise<Match[]>;
+  listFinished(tournamentId: Id): Promise<FinishedMatch[]>;
   getSchedule(tournamentId: Id): Promise<ScheduledMatchView[]>;
 }
 
@@ -86,7 +91,7 @@ export const createMatchesService = ({
     }),
 
   async listFinished(tournamentId) {
-    return (await repo.listByTournament(tournamentId)).filter((m) => m.status === 'finished');
+    return (await repo.listByTournament(tournamentId)).filter(isFinished);
   },
 
   async getSchedule(tournamentId) {

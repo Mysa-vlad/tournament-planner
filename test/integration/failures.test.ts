@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { test } from 'vitest';
 import { createContainer } from '../../src/composition.js';
 import { api, startTestServer } from './helpers.js';
 
 // AC12: збій БД під час роботи → 503 + Retry-After, процес живий, повторне закриття безпечне
-void test('AC12: БД недоступна під час запиту → 503, процес не падає', async () => {
+test('AC12: БД недоступна під час запиту → 503, процес не падає', async () => {
   const srv = await startTestServer({ dataSource: 'pg' });
   const call = api(srv.baseUrl);
   assert.equal((await call('GET', '/teams')).status, 200);
@@ -21,7 +21,7 @@ void test('AC12: БД недоступна під час запиту → 503, �
   await assert.doesNotReject(srv.close());
 });
 
-void test('AC8: недоступна БД на старті → помилка ініціалізації, а не «лінива» на першому запиті', async () => {
+test('AC8: недоступна БД на старті → помилка ініціалізації, а не «лінива» на першому запиті', async () => {
   await assert.rejects(
     createContainer({
       port: 0,

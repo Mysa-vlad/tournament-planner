@@ -47,10 +47,23 @@ export const createDatabase = async (url: string): Promise<Database> => {
     async transaction(fn) {
       const outer = activeTx.getStore();
       if (outer) return fn(); // вкладена операція — частина зовнішньої транзакції
+      // spec-lab2 §4: помилку з fn (домен, баг, уже перекладена помилка запиту) не
+      // перекладаємо вдруге — інакше TypeError у коді виглядав би як «БД недоступна» (503).
+      let appError: { error: unknown } | undefined;
       try {
-        return await pg.transaction((tx) => activeTx.run(tx, fn));
+        return await pg.transaction((tx) =>
+          activeTx.run(tx, async () => {
+            try {
+              return await fn();
+            } catch (error) {
+              appError = { error };
+              throw error;
+            }
+          }),
+        );
       } catch (err) {
-        throw translateDbError(err);
+        if (appError && err === appError.error) throw err;
+        throw translateDbError(err); // збій BEGIN/COMMIT/ROLLBACK — це вже драйвер
       }
     },
     async exec(text) {

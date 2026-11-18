@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { test } from 'vitest';
 import { createContainer } from '../../src/composition.js';
 import { runWithContext, type RequestContext } from '../../src/shared/index.js';
 
@@ -38,7 +38,7 @@ const queriesFor = async (teams: number): Promise<{ schedule: number; standings:
   }
 };
 
-void test('AC11: розклад ≤ 3 і таблиця ≤ 4 SQL-запитів незалежно від N', async () => {
+test('AC11: розклад ≤ 3 і таблиця ≤ 4 SQL-запитів незалежно від N', async () => {
   const small = await queriesFor(3);
   const large = await queriesFor(9);
   assert.deepEqual(large, small, 'кількість запитів зросла разом із N — це N+1');

@@ -12,7 +12,13 @@ export default tseslint.config(
       globals: globals.node,
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['*.js', '*.cjs'],
+          allowDefaultProject: [
+            '*.js',
+            '*.cjs',
+            'vitest.config.ts',
+            'vitest.e2e.config.ts',
+            'stryker.config.mjs',
+          ],
         },
         tsconfigRootDir: import.meta.dirname,
       },
@@ -28,6 +34,11 @@ export default tseslint.config(
   {
     files: ['**/*.js', '**/*.cjs', '**/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
+  },
+  {
+    // у JS-скриптах немає синтаксису для типу повернення
+    files: ['**/*.js', '**/*.cjs', '**/*.mjs'],
+    rules: { '@typescript-eslint/explicit-function-return-type': 'off' },
   },
   prettier,
 );
