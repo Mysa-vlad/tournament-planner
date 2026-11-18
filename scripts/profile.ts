@@ -35,7 +35,7 @@ const category = (url: string, fn: string): string => {
   if (fn === '(idle)') return 'простій (очікування I/O)';
   if (fn === '(garbage collector)') return 'GC';
   if (fn === '(program)') return 'рушій V8 / native';
-  if (url.includes('@electric-sql')) return 'БД (PGlite, WASM)';
+  if (url.includes('@electric-sql') || url.startsWith('wasm://')) return 'БД (PGlite, WASM)';
   if (url.includes('node_modules/express') || url.includes('node_modules/router')) return 'express';
   if (url.includes('node_modules/pino') || url.includes('thread-stream')) return 'логер';
   if (url.includes('node_modules')) return 'інші залежності';
@@ -70,7 +70,13 @@ const summarize = (p: CpuProfile): { top: string[]; cats: string[]; totalMs: num
   return { top, cats, totalMs };
 };
 
-const main = async (): Promise<void> => {
+const args = process.argv.slice(2);
+const flag = (name: string): string | undefined =>
+  args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+const LABEL = flag('label') ?? 'profile';
+
+/** Знімає профіль: build → node dist/server.js → L-MIX → IPC 'stop-profile'. Повертає шлях. */
+const record = async (): Promise<string> => {
   execFileSync('npm', ['run', 'build'], { stdio: 'inherit', shell: true });
   const port = await freePort();
   const dataDir = await mkdtemp(join(tmpdir(), 'tp-profile-'));
@@ -102,7 +108,7 @@ const main = async (): Promise<void> => {
       'tsx',
       'scripts/load.ts',
       url,
-      '--label=profile',
+      `--label=${LABEL}`,
       '--repeats=1',
       '--scenarios=LMIX',
       '--duration=20',
@@ -119,14 +125,19 @@ const main = async (): Promise<void> => {
   });
   child.kill();
   await rm(dataDir, { recursive: true, force: true });
+  return file;
+};
 
+const main = async (): Promise<void> => {
+  // --from=<file.cpuprofile>: лише перерахувати зведення вже знятого профілю
+  const file = flag('from') ?? (await record());
   const profile = JSON.parse(await readFile(file, 'utf8')) as CpuProfile;
   const { top, cats, totalMs } = summarize(profile);
   const sha = execFileSync('git', ['rev-parse', '--short', 'HEAD']).toString().trim();
   const md = [
     `# CPU-профіль під L-MIX @ \`${sha}\` (локально, PGlite у процесі)`,
     '',
-    `Відтворення: \`npm run profile\` · тривалість профілю ${String(Math.round(totalMs / 1000))} с (засів даних + 20 с L-MIX) · сирий профіль: \`${file.replace(/\\/g, '/')}\` (відкривається в Chrome DevTools → Performance)`,
+    `Відтворення: \`npm run profile -- --label=${LABEL}\` · тривалість профілю ${String(Math.round(totalMs / 1000))} с (засів даних + 20 с L-MIX) · сирий профіль: \`${file.replace(/\\/g, '/')}\` (відкривається в Chrome DevTools → Performance)`,
     '',
     'Увага: PGlite працює в тому самому процесі, тож час БД тут — це CPU, а не очікування.',
     'На стейджі (PostgreSQL по мережі) цей час перетворюється на очікування I/O.',
@@ -145,7 +156,7 @@ const main = async (): Promise<void> => {
     '',
   ].join('\n');
   await mkdir(join('docs', 'perf'), { recursive: true });
-  await writeFile(join('docs', 'perf', `profile-${sha}.md`), md);
+  await writeFile(join('docs', 'perf', `${LABEL}-cpu-${sha}.md`), md);
   console.info(`\n${md}`);
 };
 

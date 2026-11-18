@@ -4,3 +4,6 @@ node_modules/
 package-lock.json
 .stryker-tmp/
 reports/
+
+# згенеровані звіти вимірів (spec-lab5) — не форматуються вручну
+docs/perf/
