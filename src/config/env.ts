@@ -20,6 +20,8 @@ export const readPackageVersion = (
   }
 };
 
+export const DEFAULT_STANDINGS_TTL_MS = 5000;
+
 export interface AppConfig {
   readonly port: number;
   readonly version: string;
@@ -29,6 +31,8 @@ export interface AppConfig {
   readonly dataSource: DataSource;
   /** каталог даних PGlite; 'memory://' — окрема база в пам'яті на кожен прогін */
   readonly databaseUrl: string;
+  /** spec-lab5 AC30: скільки мс таблиця в кеші свіжа; 0 — кеш вимкнено */
+  readonly standingsCacheTtlMs?: number;
 }
 
 export const loadConfig = (
@@ -43,11 +47,16 @@ export const loadConfig = (
   if (dataSource !== 'static' && dataSource !== 'pg') {
     throw new Error(`Invalid DATA_SOURCE: ${dataSource} (expected static | pg)`);
   }
+  const standingsCacheTtlMs = Number(env.STANDINGS_CACHE_TTL_MS ?? DEFAULT_STANDINGS_TTL_MS);
+  if (!Number.isInteger(standingsCacheTtlMs) || standingsCacheTtlMs < 0) {
+    throw new Error(`Invalid STANDINGS_CACHE_TTL_MS: ${String(env.STANDINGS_CACHE_TTL_MS)}`);
+  }
   return {
     port,
     version: firstKnown(env.npm_package_version, env.APP_VERSION) ?? packageVersion() ?? '0.0.0',
     gitSha: firstKnown(env.GIT_SHA, env.RENDER_GIT_COMMIT) ?? PLACEHOLDER,
     dataSource,
     databaseUrl: env.DATABASE_URL ?? './.data/pg',
+    standingsCacheTtlMs,
   };
 };

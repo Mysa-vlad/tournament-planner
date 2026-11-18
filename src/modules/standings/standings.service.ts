@@ -1,29 +1,27 @@
-import type { Id } from '../../shared/index.js';
-import type { MatchesService } from '../matches/index.js';
-import type { TeamsService } from '../teams/index.js';
-import type { TournamentsService } from '../tournaments/index.js';
-import { computeStandings, type FinishedResult, type StandingRow } from './standings.domain.js';
+import {
+  createStandings,
+  type StandingRow,
+  type StandingsDeps,
+} from '@tournament-planner/standings';
+import { DomainError, type Id } from '../../shared/index.js';
 
+/** Фасад пакета для застосунку: мапить «турніру немає» в DomainError NOT_FOUND (→ 404). */
 export interface StandingsService {
-  getStandings(tournamentId: Id): Promise<StandingRow[]>;
+  getStandings(tournamentId: Id): Promise<readonly StandingRow[]>;
+  /** spec-lab5 AC30: викликається після запису, що змінює таблицю */
+  invalidate(tournamentId: Id): void;
 }
 
-export const createStandingsService = (
-  tournaments: TournamentsService,
-  teams: TeamsService,
-  matches: MatchesService,
-): StandingsService => ({
-  async getStandings(tournamentId) {
-    await tournaments.get(tournamentId);
-    const teamIds = await tournaments.listTeamIds(tournamentId);
-    // D9: один запит замість Promise.all(getTeam) — N+1
-    const teamList = await teams.getTeamsByIds(teamIds);
-    const results: FinishedResult[] = (await matches.listFinished(tournamentId)).map((m) => ({
-      homeTeamId: m.homeTeamId,
-      awayTeamId: m.awayTeamId,
-      homeGoals: m.homeGoals,
-      awayGoals: m.awayGoals,
-    }));
-    return computeStandings(teamList, results);
-  },
-});
+export const createStandingsService = (deps: StandingsDeps): StandingsService => {
+  const standings = createStandings(deps);
+  return {
+    async getStandings(tournamentId) {
+      const rows = await standings.get(tournamentId);
+      if (!rows) throw new DomainError('NOT_FOUND', `Tournament ${tournamentId} not found`);
+      return rows;
+    },
+    invalidate(tournamentId) {
+      standings.invalidate(tournamentId);
+    },
+  };
+};

@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { createDatabase, createPgUnitOfWork, migrate, type Database } from '../src/db/index.js';
 import type { SqlQuery } from '../src/db/sql.js';
 import { createMatchesService, createPgMatchesRepository } from '../src/modules/matches/index.js';
-import { createStandingsService } from '../src/modules/standings/index.js';
+import { createPgStandingsSource, createStandingsService } from '../src/modules/standings/index.js';
 import { createPgTeamsRepository, createTeamsService } from '../src/modules/teams/index.js';
 import {
   createPgTournamentsRepository,
@@ -41,7 +41,8 @@ const main = async (): Promise<void> => {
     teams,
     uow: createPgUnitOfWork(db),
   });
-  const standings = createStandingsService(tournaments, teams, matches);
+  // read model, як у composition на pg (spec-lab5 AC29); кеш вимкнено — міряємо сам SQL
+  const standings = createStandingsService({ source: createPgStandingsSource(db) });
   const as = <T>(fn: () => Promise<T>): Promise<T> =>
     runWithContext({ requestId: 'explain', userId: ORG, queryCount: 0 }, fn);
 

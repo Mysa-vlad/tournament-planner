@@ -1,0 +1,21 @@
+{
+  "name": "@tournament-planner/standings",
+  "version": "1.0.0",
+  "description": "Турнірна таблиця (S4) з DI: джерело даних, кеш, годинник і правила очок передаються при ініціалізації",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "tp-source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "license": "MIT"
+}
