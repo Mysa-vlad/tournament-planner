@@ -62,7 +62,7 @@ jobs:
         run: npm run lint
       - name: Типи (tsc)
         run: npm run typecheck
-      - name: Межі модулів (dependency-cruiser, D1–D6)
+      - name: Межі модулів і пакета (dependency-cruiser, D1–D6, D10–D11)
         run: npm run audit:deps
 
   test:
