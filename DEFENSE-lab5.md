@@ -2,7 +2,7 @@
 
 # DEFENSE — Завдання 5: перформанс і винесення бібліотеки
 
-**PR:** <!-- посилання на PR завдання 5 --> · Spec: [spec-lab5.md](spec-lab5.md) ·
+**PR:** [Mysa-vlad/tournament-planner#11](https://github.com/Mysa-vlad/tournament-planner/pull/11) · Spec: [spec-lab5.md](spec-lab5.md) ·
 Зведення до/після: [docs/perf/README.md](docs/perf/README.md)
 
 **1. Що я просив у AI.** Знайти боттлнек вимірами, винести найвразливіший модуль у пакет із
@@ -37,8 +37,9 @@ DI і довести покращення цифрами. Промпт досл�
 | L-MIX      | 41,4 | **20,9** (RPS 430 → 931) |
 
 Без кешу лише один SQL дає L1 p95 44,8 → 20,0. Профіль: за 20 с L-MIX 9 631 → 19 845
-запитів. Стейдж: базова лінія [`staging-baseline-65b30f3`](docs/perf/staging-baseline-65b30f3.md),
-<!-- додай staging-after після деплою -->.
+запитів. Стейдж ([до](docs/perf/staging-baseline-65b30f3.md) → [після](docs/perf/staging-after-195cda8.md)):
+L1 p95 285,6 → 161,8 мс, RPS 66 → 117; L-MIX p95 216,8 → 199,8, p99 388,9 → 305,8. L2 за
+p95 не гірший, але p50 вищий (120 → ~175), і причину не встановлено (див. [docs/perf](docs/perf/README.md)).
 
 **5. Аудит топ-3** ([`ai/09-lab5-audit.md`](ai/09-lab5-audit.md)): wasm-кадри профілю
 спершу потрапили в «інше» (20 % CPU); «погіршення» L2 виявилось шумом між сесіями, тож
