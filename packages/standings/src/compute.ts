@@ -1,37 +1,18 @@
-import type { Id } from '../../shared/index.js';
+import type { PointsRules, StandingRow, TournamentSnapshot } from './contract.js';
 
-/** Мінімальний вхід — лише те, що потрібно для таблиці (не весь Match). */
-export interface FinishedResult {
-  readonly homeTeamId: Id;
-  readonly awayTeamId: Id;
-  readonly homeGoals: number;
-  readonly awayGoals: number;
-}
+export const DEFAULT_POINTS: PointsRules = Object.freeze({ win: 3, draw: 1, loss: 0 });
 
-export interface StandingRow {
-  readonly teamId: Id;
-  readonly teamName: string;
-  played: number;
-  won: number;
-  drawn: number;
-  lost: number;
-  goalsFor: number;
-  goalsAgainst: number;
-  goalDiff: number;
-  points: number;
-}
-
-export const POINTS = { win: 3, draw: 1, loss: 0 } as const;
+type MutableRow = { -readonly [K in keyof StandingRow]: StandingRow[K] };
 
 /**
- * S4: турнірна таблиця. Чиста функція (AC6).
+ * S4: турнірна таблиця. Чиста функція.
  * Сортування: очки → різниця м'ячів → забиті → назва.
  */
 export const computeStandings = (
-  teams: readonly { id: Id; name: string }[],
-  results: readonly FinishedResult[],
+  { teams, results }: TournamentSnapshot,
+  rules: PointsRules = DEFAULT_POINTS,
 ): StandingRow[] => {
-  const rows = new Map<Id, StandingRow>(
+  const rows = new Map<string, MutableRow>(
     teams.map((t) => [
       t.id,
       {
@@ -49,7 +30,7 @@ export const computeStandings = (
     ]),
   );
 
-  const apply = (teamId: Id, scored: number, conceded: number): void => {
+  const apply = (teamId: string, scored: number, conceded: number): void => {
     const row = rows.get(teamId);
     if (!row) throw new Error(`Result references unknown team ${teamId}`);
     row.played += 1;
@@ -58,13 +39,13 @@ export const computeStandings = (
     row.goalDiff = row.goalsFor - row.goalsAgainst;
     if (scored > conceded) {
       row.won += 1;
-      row.points += POINTS.win;
+      row.points += rules.win;
     } else if (scored === conceded) {
       row.drawn += 1;
-      row.points += POINTS.draw;
+      row.points += rules.draw;
     } else {
       row.lost += 1;
-      row.points += POINTS.loss;
+      row.points += rules.loss;
     }
   };
 

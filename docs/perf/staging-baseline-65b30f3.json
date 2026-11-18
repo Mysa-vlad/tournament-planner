@@ -1,0 +1,138 @@
+{
+  "target": "https://tournament-planner-staging.onrender.com",
+  "version": {
+    "sha": "65b30f3dd7e0ef412e9d0b087e52bc2114f8fd14",
+    "version": "0.1.0",
+    "startedAt": "2026-11-18T12:32:29.632Z"
+  },
+  "raw": {
+    "L1": [
+      {
+        "p50": 187.3312,
+        "p95": 392.32,
+        "p99": 579.0763,
+        "rps": 53,
+        "requests": 1057,
+        "errors": 0,
+        "loopP99": null,
+        "rssMb": null
+      },
+      {
+        "p50": 117.1897,
+        "p95": 280.3039,
+        "p99": 397.9595,
+        "rps": 66,
+        "requests": 1319,
+        "errors": 0,
+        "loopP99": null,
+        "rssMb": null
+      },
+      {
+        "p50": 112.4798,
+        "p95": 285.6195,
+        "p99": 387.8515,
+        "rps": 68,
+        "requests": 1368,
+        "errors": 0,
+        "loopP99": null,
+        "rssMb": null
+      }
+    ],
+    "L2": [
+      {
+        "p50": 145.9414,
+        "p95": 396.4717,
+        "p99": 514.5099,
+        "rps": 57,
+        "requests": 1147,
+        "errors": 0,
+        "loopP99": null,
+        "rssMb": null
+      },
+      {
+        "p50": 117.7653,
+        "p95": 302.4431,
+        "p99": 409.847,
+        "rps": 64,
+        "requests": 1287,
+        "errors": 0,
+        "loopP99": null,
+        "rssMb": null
+      },
+      {
+        "p50": 120.2883,
+        "p95": 315.4218,
+        "p99": 425.7819,
+        "rps": 62,
+        "requests": 1244,
+        "errors": 0,
+        "loopP99": null,
+        "rssMb": null
+      }
+    ],
+    "L3": [
+      {
+        "p50": 71.7726,
+        "p95": 101.515,
+        "p99": 191.2806,
+        "rps": 131,
+        "requests": 2618,
+        "errors": 0,
+        "loopP99": null,
+        "rssMb": null
+      },
+      {
+        "p50": 71.319,
+        "p95": 101.6257,
+        "p99": 179.6289,
+        "rps": 132,
+        "requests": 2634,
+        "errors": 0,
+        "loopP99": null,
+        "rssMb": null
+      },
+      {
+        "p50": 68.9685,
+        "p95": 91.7632,
+        "p99": 158.6963,
+        "rps": 138,
+        "requests": 2768,
+        "errors": 0,
+        "loopP99": null,
+        "rssMb": null
+      }
+    ],
+    "LMIX": [
+      {
+        "p50": 109.3885,
+        "p95": 266.644,
+        "p99": 399.5851,
+        "rps": 73,
+        "requests": 1456,
+        "errors": 0,
+        "loopP99": null,
+        "rssMb": null
+      },
+      {
+        "p50": 109.1512,
+        "p95": 213.0149,
+        "p99": 388.9338,
+        "rps": 75,
+        "requests": 1494,
+        "errors": 0,
+        "loopP99": null,
+        "rssMb": null
+      },
+      {
+        "p50": 106.9286,
+        "p95": 216.8294,
+        "p99": 385.9824,
+        "rps": 76,
+        "requests": 1518,
+        "errors": 0,
+        "loopP99": null,
+        "rssMb": null
+      }
+    ]
+  }
+}

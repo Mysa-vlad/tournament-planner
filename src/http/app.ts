@@ -6,6 +6,7 @@ import { createTeamsRouter } from '../modules/teams/index.js';
 import { createTournamentsRouter } from '../modules/tournaments/index.js';
 import { contextMiddleware } from './context-middleware.js';
 import { errorHandler } from './error-handler.js';
+import { metricsHandler } from './metrics.js';
 
 /** HTTP-рівень: знає лише про маршрути й формат; сервіси приходять готовими з composition root. */
 export interface AppInfo {
@@ -37,6 +38,9 @@ export const createApp = (
   app.get('/version', (_req, res) => {
     res.json({ sha: info.gitSha, version: info.version, startedAt });
   });
+
+  // spec-lab5 AC24: RAM і затримка event loop (для аналізу «CPU чи очікування»)
+  app.get('/metrics', metricsHandler);
 
   app.use('/teams', createTeamsRouter(services.teams));
   app.use('/tournaments', createTournamentsRouter(services.tournaments));

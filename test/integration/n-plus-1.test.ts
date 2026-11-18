@@ -7,7 +7,13 @@ import { runWithContext, type RequestContext } from '../../src/shared/index.js';
 // AC11 / D9: кількість SQL-запитів на читання не залежить від кількості команд (регресія N+1)
 const ORG = 'org-queries';
 
-const queriesFor = async (teams: number): Promise<{ schedule: number; standings: number }> => {
+interface Counts {
+  schedule: number;
+  standings: number;
+  standingsCached: number;
+}
+
+const queriesFor = async (teams: number): Promise<Counts> => {
   const container = await createContainer({
     port: 0,
     version: 'test',
@@ -33,6 +39,7 @@ const queriesFor = async (teams: number): Promise<{ schedule: number; standings:
       return {
         schedule: await measure(() => services.matches.getSchedule(t.id)),
         standings: await measure(() => services.standings.getStandings(t.id)),
+        standingsCached: await measure(() => services.standings.getStandings(t.id)),
       };
     });
   } finally {
@@ -40,10 +47,12 @@ const queriesFor = async (teams: number): Promise<{ schedule: number; standings:
   }
 };
 
-test('AC11: розклад ≤ 3 і таблиця ≤ 4 SQL-запитів незалежно від N', async () => {
+// spec-lab5 AC29/AC30: таблиця — 1 SQL (read model) на холодний кеш і 0 — з кешу
+test('AC11: розклад ≤ 3 і таблиця = 1 SQL-запит незалежно від N; з кешу — 0', async () => {
   const small = await queriesFor(3);
   const large = await queriesFor(9);
   assert.deepEqual(large, small, 'кількість запитів зросла разом із N — це N+1');
   assert.ok(small.schedule <= 3, `schedule: ${String(small.schedule)} queries`);
-  assert.ok(small.standings <= 4, `standings: ${String(small.standings)} queries`);
+  assert.equal(small.standings, 1, `standings: ${String(small.standings)} queries`);
+  assert.equal(small.standingsCached, 0, 'повторне читання в межах TTL не йде в БД');
 });

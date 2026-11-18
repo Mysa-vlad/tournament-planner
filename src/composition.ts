@@ -1,4 +1,5 @@
-import type { AppConfig } from './config/env.js';
+import { createMemoryCache, type StandingsSource } from '@tournament-planner/standings';
+import { DEFAULT_STANDINGS_TTL_MS, type AppConfig } from './config/env.js';
 import {
   createDatabase,
   createPgUnitOfWork,
@@ -14,7 +15,12 @@ import {
   type MatchesRepository,
   type MatchesService,
 } from './modules/matches/index.js';
-import { createStandingsService, type StandingsService } from './modules/standings/index.js';
+import {
+  createPgStandingsSource,
+  createServicesStandingsSource,
+  createStandingsService,
+  type StandingsService,
+} from './modules/standings/index.js';
 import {
   createInMemoryTeamsRepository,
   createPgTeamsRepository,
@@ -57,6 +63,8 @@ interface Infrastructure {
   readonly tournamentsRepo: TournamentsRepository;
   readonly matchesRepo: MatchesRepository;
   readonly uow: UnitOfWork;
+  /** spec-lab5: read model таблиці на PostgreSQL; без нього — джерело через сервіси */
+  readonly standingsSource?: StandingsSource;
   readiness(): Promise<Readiness>;
   close(): Promise<void>;
 }
@@ -101,6 +109,7 @@ const pgInfrastructure = async (databaseUrl: string): Promise<Infrastructure> =>
     tournamentsRepo: createPgTournamentsRepository(db),
     matchesRepo: createPgMatchesRepository(db),
     uow: createPgUnitOfWork(db),
+    standingsSource: createPgStandingsSource(db),
     close: () => db.close(),
   };
 };
@@ -117,14 +126,38 @@ export const createContainer = async (config: AppConfig): Promise<Container> => 
       : staticInfrastructure();
 
   const teams = createTeamsService(infra.teamsRepo);
-  const tournaments = createTournamentsService(infra.tournamentsRepo, teams);
-  const matches = createMatchesService({
+  const baseTournaments = createTournamentsService(infra.tournamentsRepo, teams);
+  const baseMatches = createMatchesService({
     repo: infra.matchesRepo,
-    tournaments,
+    tournaments: baseTournaments,
     teams,
     uow: infra.uow,
   });
-  const standings = createStandingsService(tournaments, teams, matches);
+  // spec-lab5 AC28: залежності пакета таблиці (джерело, кеш, годинник) — тут, а не в пакеті
+  const standings = createStandingsService({
+    source:
+      infra.standingsSource ?? createServicesStandingsSource(baseTournaments, teams, baseMatches),
+    cache: createMemoryCache(),
+    ttlMs: config.standingsCacheTtlMs ?? DEFAULT_STANDINGS_TTL_MS,
+  });
+  // spec-lab5 AC30: записи, що змінюють таблицю, скидають її кеш (після успіху/коміту).
+  // Модулі tournaments і matches про standings не знають (D4) — зв'язок лише тут.
+  const tournaments: TournamentsService = {
+    ...baseTournaments,
+    async registerTeam(tournamentId, teamId) {
+      const result = await baseTournaments.registerTeam(tournamentId, teamId);
+      standings.invalidate(tournamentId);
+      return result;
+    },
+  };
+  const matches: MatchesService = {
+    ...baseMatches,
+    async recordResult(matchId, homeGoals, awayGoals) {
+      const match = await baseMatches.recordResult(matchId, homeGoals, awayGoals);
+      standings.invalidate(match.tournamentId);
+      return match;
+    },
+  };
   return {
     services: { teams, tournaments, matches, standings },
     readiness: () => infra.readiness(),

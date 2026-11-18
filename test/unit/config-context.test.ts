@@ -15,6 +15,7 @@ describe('loadConfig', () => {
       gitSha: 'unknown',
       dataSource: 'pg',
       databaseUrl: './.data/pg',
+      standingsCacheTtlMs: 5000,
     });
   });
 
@@ -26,6 +27,7 @@ describe('loadConfig', () => {
         DATABASE_URL: 'memory://',
         npm_package_version: '1.2.3',
         GIT_SHA: 'abc123',
+        STANDINGS_CACHE_TTL_MS: '0',
       }),
     ).toEqual({
       port: 8080,
@@ -33,7 +35,13 @@ describe('loadConfig', () => {
       gitSha: 'abc123',
       dataSource: 'static',
       databaseUrl: 'memory://',
+      standingsCacheTtlMs: 0,
     });
+  });
+
+  test('некоректний STANDINGS_CACHE_TTL_MS — помилка старту (spec-lab5 AC30)', () => {
+    expect(() => loadConfig({ STANDINGS_CACHE_TTL_MS: '-1' })).toThrow(/STANDINGS_CACHE_TTL_MS/);
+    expect(() => loadConfig({ STANDINGS_CACHE_TTL_MS: 'abc' })).toThrow(/STANDINGS_CACHE_TTL_MS/);
   });
 
   test('SHA і версія на Render: RENDER_GIT_COMMIT, APP_VERSION (spec-lab4 AC19)', () => {

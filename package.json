@@ -9,26 +9,29 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch --conditions=tp-source src/server.ts",
     "start": "node dist/server.js",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "npm run build -w @tournament-planner/standings && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "audit:deps": "depcruise src --config .dependency-cruiser.cjs",
+    "audit:deps": "depcruise src packages --config .dependency-cruiser.cjs",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run audit:deps && npm run test && npm run build && npm run test:e2e",
     "prepare": "husky",
-    "dev:static": "tsx watch --env-file=.env.static src/server.ts",
-    "probe:queries": "tsx --env-file=.env.probe scripts/probe-queries.ts",
-    "probe:edge": "tsx --env-file=.env.probe scripts/probe-edge-cases.ts",
+    "dev:static": "tsx watch --conditions=tp-source --env-file=.env.static src/server.ts",
+    "probe:queries": "tsx --conditions=tp-source --env-file=.env.probe scripts/probe-queries.ts",
+    "probe:edge": "tsx --conditions=tp-source --env-file=.env.probe scripts/probe-edge-cases.ts",
     "test": "vitest run --coverage",
     "test:unit": "vitest run test/unit",
     "test:integration": "vitest run test/integration",
     "test:e2e": "npm run build && vitest run --config vitest.e2e.config.ts",
     "mutation": "stryker run",
-    "db:migrate": "tsx src/db/cli.ts migrate",
-    "db:seed": "tsx src/db/cli.ts seed"
+    "db:migrate": "tsx --conditions=tp-source src/db/cli.ts migrate",
+    "db:seed": "tsx --conditions=tp-source src/db/cli.ts seed",
+    "load": "tsx --conditions=tp-source scripts/load.ts",
+    "profile": "tsx --conditions=tp-source scripts/profile.ts",
+    "explain": "tsx --conditions=tp-source --env-file=.env.probe scripts/explain.ts"
   },
   "author": "Мусієнко Владислав (ІО-44)",
   "license": "MIT",
@@ -43,11 +46,13 @@
     "@eslint/js": "^10.0.1",
     "@stryker-mutator/core": "^10.1.1",
     "@stryker-mutator/vitest-runner": "^10.1.1",
+    "@types/autocannon": "^7.12.7",
     "@types/express": "^5.0.6",
     "@types/node": "^22.20.5",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.2.1",
     "@vitest/coverage-v8": "^5.1.0",
+    "autocannon": "^9.0.0",
     "dependency-cruiser": "^18.7.2",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
@@ -69,5 +74,8 @@
     "*.{md,json,yml,yaml}": [
       "prettier --check"
     ]
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }

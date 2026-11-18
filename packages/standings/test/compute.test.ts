@@ -1,9 +1,16 @@
 import { describe, expect, test } from 'vitest';
 import {
-  computeStandings,
-  POINTS,
+  computeStandings as compute,
+  DEFAULT_POINTS,
   type FinishedResult,
-} from '../../src/modules/standings/index.js';
+  type TeamRef,
+} from '../src/index.js';
+
+// старі тести S4/T6 (із застосунку) — через знімок { teams, results } пакета
+const computeStandings = (
+  t: readonly TeamRef[],
+  results: readonly FinishedResult[],
+): ReturnType<typeof compute> => compute({ teams: t, results });
 
 const teams = [
   { id: 'a', name: 'Alpha' },
@@ -25,7 +32,7 @@ describe('computeStandings (S4)', () => {
   });
 
   test('перемога 3, нічия 1, поразка 0', () => {
-    expect(POINTS).toEqual({ win: 3, draw: 1, loss: 0 });
+    expect(DEFAULT_POINTS).toEqual({ win: 3, draw: 1, loss: 0 });
     const table = computeStandings(teams, [r('a', 'b', 2, 0), r('b', 'c', 1, 1)]);
     const byId = Object.fromEntries(table.map((row) => [row.teamId, row]));
     expect(byId.a).toMatchObject({ played: 1, won: 1, points: 3, goalsFor: 2, goalsAgainst: 0 });
@@ -74,5 +81,16 @@ describe('очки важливіші за різницю м’ячів (T6)', (
     const table = computeStandings(four, [r('a', 'c', 1, 0), r('d', 'a', 5, 0), r('b', 'c', 0, 0)]);
     const pos = (id: string): number => table.findIndex((row) => row.teamId === id);
     expect(pos('a')).toBeLessThan(pos('b'));
+  });
+});
+
+describe('правила очок передаються ззовні (DI, spec-lab5 AC28)', () => {
+  test('інші правила (2 за перемогу, −1 за поразку) змінюють лише нарахування', () => {
+    const table = compute(
+      { teams, results: [r('a', 'b', 1, 0), r('b', 'c', 2, 2)] },
+      { win: 2, draw: 1, loss: -1 },
+    );
+    const byId = Object.fromEntries(table.map((row) => [row.teamId, row.points]));
+    expect(byId).toEqual({ a: 2, b: 0, c: 1 }); // b: поразка −1 і нічия +1
   });
 });

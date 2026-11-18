@@ -5,6 +5,7 @@ import {
   type MatchesService,
 } from '../../src/modules/matches/index.js';
 import {
+  createServicesStandingsSource,
   createStandingsService,
   type StandingsService,
 } from '../../src/modules/standings/index.js';
@@ -49,7 +50,9 @@ export const makeServices = (uow: UnitOfWork = passthroughUnitOfWork): Services 
   const teams = createTeamsService(repos.teams);
   const tournaments = createTournamentsService(repos.tournaments, teams);
   const matches = createMatchesService({ repo: repos.matches, tournaments, teams, uow });
-  const standings = createStandingsService(tournaments, teams, matches);
+  const standings = createStandingsService({
+    source: createServicesStandingsSource(tournaments, teams, matches),
+  });
   return { repos, teams, tournaments, matches, standings };
 };
 

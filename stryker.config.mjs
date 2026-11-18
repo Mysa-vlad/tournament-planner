@@ -6,9 +6,12 @@ export default {
   coverageAnalysis: 'perTest',
   mutate: [
     'src/modules/**/*.ts',
+    'packages/*/src/**/*.ts',
     'src/http/error-handler.ts',
     // реекспорти без логіки
     '!src/modules/**/index.ts',
+    '!packages/*/src/index.ts',
+    '!packages/*/src/contract.ts',
   ],
   reporters: ['clear-text', 'progress', 'html', 'json'],
   htmlReporter: { fileName: 'reports/mutation/index.html' },

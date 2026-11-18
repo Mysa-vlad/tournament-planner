@@ -30,7 +30,7 @@ Tournament Planner вирішує це так:
 - [spec.md](spec.md): специфікація (модулі, дані, сценарії, критерії прийняття)
 - [standards/](standards/): інженерні стандарти проєкту
 - [adr/](adr/): архітектурні рішення (MADR)
-- [DEFENSE.md](DEFENSE.md) (завдання 1), [DEFENSE-lab2.md](DEFENSE-lab2.md) (завдання 2), [DEFENSE-lab3.md](DEFENSE-lab3.md) (завдання 3), [DEFENSE-lab4.md](DEFENSE-lab4.md) (завдання 4): захист
+- [DEFENSE.md](DEFENSE.md) (завдання 1), [DEFENSE-lab2.md](DEFENSE-lab2.md) (завдання 2), [DEFENSE-lab3.md](DEFENSE-lab3.md) (завдання 3), [DEFENSE-lab4.md](DEFENSE-lab4.md) (завдання 4), [DEFENSE-lab5.md](DEFENSE-lab5.md) (завдання 5): захист
 - [ai/](ai/): слід промптів до AI
 
 ## Запуск
@@ -46,7 +46,8 @@ npm run check         # формат, лінт, типи, межі модулі�
 ```
 
 Змінні середовища: `PORT` (3000), `DATA_SOURCE` (`pg` | `static`), `DATABASE_URL`
-(`./.data/pg` або `memory://`), `LOG_LEVEL`.
+(`./.data/pg` або `memory://`), `LOG_LEVEL`, `STANDINGS_CACHE_TTL_MS` (5000; `0` вимикає
+кеш таблиці).
 
 ## API (Завдання 2)
 
@@ -79,3 +80,19 @@ npm run mutation     # Stryker → reports/mutation/index.html
 | Unit         | `test/unit/`        | нічого (чисті функції, in-memory репозиторії)       |
 | Інтеграційні | `test/integration/` | PGlite `memory://` + express через supertest        |
 | E2E          | `test/e2e/`         | `node dist/server.js`, файлова БД у тимчасовій теці |
+
+## Перформанс (Завдання 5)
+
+Сценарії, метрики й критерії описані в [spec-lab5.md](spec-lab5.md), звіти лежать у [docs/perf/](docs/perf/).
+
+```bash
+npm run load -- https://tournament-planner-staging.onrender.com --label=staging   # L1–L3, L-MIX × 3 повтори
+npm run load -- http://localhost:3000 --label=local
+npm run profile -- --label=profile   # збірка + CPU-профіль під L-MIX → docs/perf/<label>-cpu-<sha>.md
+npm run explain                      # EXPLAIN (ANALYZE, BUFFERS) запитів L1–L4
+```
+
+- `GET /metrics` віддає RSS, heap, затримку event loop (p50/p99/max) і uptime; `?reset=1` скидає гістограму.
+- `GET /version` віддає SHA, до якого прив'язано кожен звіт.
+- Таблицю винесено в пакет [`packages/standings`](packages/standings/) з DI
+  ([ADR 0009](adr/0009-standings-package-di-boundary.md)).
