@@ -41,7 +41,15 @@
 - CI на PR #4: 5/5 зелених job, зокрема інтеграційні тести на **PostgreSQL 16** і
   збірка Docker-образу ([run](https://github.com/Mysa-vlad/tournament-planner/actions/runs/43592116718)).
 - Правило `main`: PR-only, 5 обов'язкових статусів, гілка актуальна, без force-push і видалення.
-- CD: _<посилання на прогін CD>_, після якого `curl <стейдж>/version` повертає SHA
-  задеплоєного коміту (AC19).
+- CD: [прогін #1](https://github.com/Mysa-vlad/tournament-planner/actions/runs/44299727039)
+  (коміт `822a2da`) застосував міграції в Neon і задеплоїв, але **впав на кроці 5**:
+  `/version` віддавав `sha: "unknown"`. Причина — заглушка `GIT_SHA=unknown` у Dockerfile
+  перекривала `RENDER_GIT_COMMIT`. Виправлено в PR
+  [#8](https://github.com/Mysa-vlad/tournament-planner/pull/8) (spec `0c4860c` → код і
+  регресійний тест). [Прогін #2](https://github.com/Mysa-vlad/tournament-planner/actions/runs/44301921882)
+  (`87fcc48`) зелений, і `curl https://tournament-planner-staging.onrender.com/version`
+  повертає `87fcc486a39efc9992a1adad19faf89ac2f68013` (AC19). Докази:
+  [`docs/evidence/16`](docs/evidence/16-cd-staging-deploy.md).
+- Merge PR #4 — без обходу: гілку оновлено від `main`, 5/5 перевірок зелені, звичайний merge.
 - Відтворення локально: `npm run db:migrate -- schema` (окремі кроки), `npm run db:seed`,
   `npm run check`.
