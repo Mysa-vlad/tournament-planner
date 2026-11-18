@@ -1,0 +1,2 @@
+# DoD A7: Conventional Commits
+node scripts/check-commit-msg.mjs "$1"

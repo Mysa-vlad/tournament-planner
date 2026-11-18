@@ -1,0 +1,41 @@
+# Доказ: після аудиту pre-push проходить (DoD A4-A6, spec AC4)
+
+$ git push hooktest feat/lab1-foundation
+
+> tournament-planner@0.1.0 audit:deps
+> depcruise src --config .dependency-cruiser.cjs
+
+
+✔ no dependency violations found (28 modules, 70 dependencies cruised)
+
+
+> tournament-planner@0.1.0 test:smoke
+> node --import tsx --test test/smoke/*.test.ts
+
+TAP version 13
+# Subtest: AC2: GET /health returns 200 {status: ok}
+ok 1 - AC2: GET /health returns 200 {status: ok}
+  ---
+  duration_ms: 29.4533
+  ...
+# Subtest: S1-S4: register → start → result → standings
+ok 2 - S1-S4: register → start → result → standings
+  ---
+  duration_ms: 42.1412
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 447.0769
+
+> tournament-planner@0.1.0 build
+> tsc -p tsconfig.build.json
+
+To <local-bare-remote>
+ * [new branch]      feat/lab1-foundation -> feat/lab1-foundation
+exit code: 0

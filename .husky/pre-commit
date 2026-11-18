@@ -1,0 +1,3 @@
+# DoD A1-A3: формат і лінт staged-файлів, типи — блокує брудний коміт
+npx lint-staged
+npm run typecheck

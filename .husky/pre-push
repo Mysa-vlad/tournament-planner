@@ -1,0 +1,4 @@
+# DoD A4-A6: межі модулів (spec §6), smoke-тест, збірка
+npm run audit:deps
+npm run test:smoke
+npm run build

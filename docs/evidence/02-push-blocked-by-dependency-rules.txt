@@ -1,0 +1,37 @@
+# Доказ: pre-push не пропускає порушення меж модулів (DoD A4, spec AC4)
+# Стан гілки: коміт 2f01727 (перша версія структури, до аудиту)
+
+$ git push hooktest feat/lab1-foundation
+
+> tournament-planner@0.1.0 audit:deps
+> depcruise src --config .dependency-cruiser.cjs
+
+
+  error D2-module-public-api-only: src/modules/matches/matches.service.ts → src/modules/teams/teams.repository.ts
+  error D1-no-circular: src/modules/tournaments/index.ts → 
+      src/modules/tournaments/tournaments.service.ts →
+      src/modules/teams/index.ts →
+      src/modules/teams/teams.routes.ts →
+      src/modules/teams/teams.service.ts →
+      src/modules/tournaments/index.ts
+  error D1-no-circular: src/modules/teams/index.ts → 
+      src/modules/teams/teams.service.ts →
+      src/modules/tournaments/index.ts →
+      src/modules/tournaments/tournaments.routes.ts →
+      src/modules/tournaments/tournaments.service.ts →
+      src/modules/teams/index.ts
+  error D1-no-circular: src/modules/teams/index.ts → 
+      src/modules/teams/teams.routes.ts →
+      src/modules/teams/teams.service.ts →
+      src/modules/tournaments/index.ts →
+      src/modules/tournaments/tournaments.routes.ts →
+      src/modules/tournaments/tournaments.service.ts →
+      src/modules/teams/index.ts
+
+x 4 dependency violations (4 errors, 0 warnings). 28 modules, 72 dependencies cruised.
+
+husky - pre-push script failed (code 4)
+error: failed to push some refs to '<local-bare-remote>'
+exit code: 1
+
+$ git ls-remote hooktest   # порожньо — push не відбувся
