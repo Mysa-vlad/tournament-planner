@@ -3,26 +3,19 @@ import { mkdirSync } from 'node:fs';
 import { PGlite, type Transaction } from '@electric-sql/pglite';
 import { countQuery, logger } from '../shared/index.js';
 import { translateDbError } from './errors.js';
+import { createPostgresDatabase } from './postgres.js';
+import { describeUrl, isPostgresUrl, type Database } from './contract.js';
 import type { SqlQuery } from './sql.js';
 
 type Executor = Pick<PGlite, 'query' | 'exec'> | Pick<Transaction, 'query' | 'exec'>;
 
-/** Ресурс БД: створюється й перевіряється ОДИН раз на старті (composition root). */
-export interface Database {
-  query<Row>(query: SqlQuery): Promise<Row[]>;
-  /** BEGIN … COMMIT; запити всередині автоматично йдуть у цю транзакцію (через ALS) */
-  transaction<T>(fn: () => Promise<T>): Promise<T>;
-  /** кілька SQL-операторів без параметрів (міграції) */
-  exec(text: string): Promise<void>;
-  inTransaction(): boolean;
-  close(): Promise<void>;
-}
+export { describeUrl, isPostgresUrl, type Database } from './contract.js';
 
-/**
- * spec D6: транзакції й SQL живуть лише тут і в *.repository.ts.
- * Активна транзакція лежить в AsyncLocalStorage — репозиторіям не треба передавати `tx`.
- */
-export const createDatabase = async (url: string): Promise<Database> => {
+/** PostgreSQL-сервер (pg.Pool) для postgres://, інакше вбудований PGlite (memory:// або каталог). */
+export const createDatabase = async (url: string): Promise<Database> =>
+  isPostgresUrl(url) ? createPostgresDatabase(url) : createPgliteDatabase(url);
+
+const createPgliteDatabase = async (url: string): Promise<Database> => {
   // файловий режим: PGlite не створює батьківський каталог сам
   if (!url.includes('://')) mkdirSync(url, { recursive: true });
   const pg = new PGlite(url);
@@ -83,9 +76,9 @@ export const createDatabase = async (url: string): Promise<Database> => {
   try {
     await pg.waitReady;
     const [row] = await pg.query<{ now: Date }>('SELECT now() AS now').then((r) => r.rows);
-    logger.info({ url: url.startsWith('memory') ? url : 'file', now: row?.now }, 'database ready');
+    logger.info({ url: describeUrl(url), now: row?.now }, 'database ready');
   } catch (err) {
-    throw new Error(`Database initialisation failed (${url})`, { cause: err });
+    throw new Error(`Database initialisation failed (${describeUrl(url)})`, { cause: err });
   }
   return db;
 };

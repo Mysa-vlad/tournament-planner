@@ -7,10 +7,13 @@ const main = async (): Promise<void> => {
   const config = loadConfig();
   // AC8: якщо ресурс (БД) недоступний — падаємо тут, до прийому запитів
   const container = await createContainer(config);
-  const app = createApp(container.services, { version: config.version });
+  const app = createApp(container, { version: config.version, gitSha: config.gitSha });
 
   const server = app.listen(config.port, () => {
-    logger.info({ port: config.port, dataSource: config.dataSource }, 'server started');
+    logger.info(
+      { port: config.port, dataSource: config.dataSource, sha: config.gitSha },
+      'server started',
+    );
   });
 
   let stopping = false;

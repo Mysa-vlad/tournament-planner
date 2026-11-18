@@ -1,0 +1,133 @@
+# spec-lab4 §2: CI, що блокує merge. Назви job — це обов'язкові статуси в правилі гілки main.
+name: CI
+
+on:
+  # PR у будь-яку гілку (стек PR завдань і PR аудиту теж перевіряються);
+  # обов'язковими статуси є лише для main (правило гілки)
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 22
+  LOG_LEVEL: silent
+
+jobs:
+  commits:
+    name: commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Conventional Commits у кожному коміті PR
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          status=0
+          for sha in $(git rev-list --no-merges "$BASE..$HEAD"); do
+            git log -1 --format=%B "$sha" > "$RUNNER_TEMP/msg"
+            if ! node scripts/check-commit-msg.mjs "$RUNNER_TEMP/msg"; then
+              echo "::error::Commit $sha does not follow Conventional Commits"
+              status=1
+            fi
+          done
+          exit $status
+      - name: Push у main — перевіряти нічого (зміни приходять лише через PR)
+        if: github.event_name != 'pull_request'
+        run: echo "commit messages were checked in the pull request"
+
+  quality:
+    name: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Стиль (Prettier)
+        run: npm run format:check
+      - name: Лінт (ESLint)
+        run: npm run lint
+      - name: Типи (tsc)
+        run: npm run typecheck
+      - name: Межі модулів (dependency-cruiser, D1–D6)
+        run: npm run audit:deps
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Unit + інтеграційні (PGlite) з порогами покриття
+        run: npm test
+      - name: Звіт покриття
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: reports/coverage
+          if-no-files-found: ignore
+
+  test-postgres:
+    name: test-postgres
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: tournament_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U app -d tournament_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://app:app@localhost:5432/tournament_ci
+      TEST_DATABASE_URL: postgres://app:app@localhost:5432/tournament_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Міграції окремими кроками (як у CD)
+        run: |
+          npm run db:migrate -- schema
+          npm run db:migrate -- data
+          npm run db:migrate -- indexes
+      - name: Інтеграційні тести на справжньому PostgreSQL 16 (AC22)
+        run: npx vitest run test/integration --no-file-parallelism
+
+  build-e2e:
+    name: build-e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Збірка + E2E проти зібраного процесу
+        run: npm run test:e2e
+      - name: Docker-образ збирається
+        run: docker build --build-arg GIT_SHA=${{ github.sha }} -t tournament-planner:ci .

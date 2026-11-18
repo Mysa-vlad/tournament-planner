@@ -1,4 +1,5 @@
 import type { AddressInfo } from 'node:net';
+import { testDatabaseUrl } from '../test-db.js';
 import { createContainer, type Container } from '../../src/composition.js';
 import type { AppConfig } from '../../src/config/env.js';
 import { createApp } from '../../src/http/app.js';
@@ -13,12 +14,13 @@ export const startTestServer = async (overrides: Partial<AppConfig>): Promise<Te
   const config: AppConfig = {
     port: 0,
     version: 'smoke',
+    gitSha: 'test',
     dataSource: 'static',
-    databaseUrl: 'memory://',
+    databaseUrl: testDatabaseUrl,
     ...overrides,
   };
   const container = await createContainer(config);
-  const app = createApp(container.services, { version: config.version });
+  const app = createApp(container, { version: config.version, gitSha: 'test' });
   return new Promise((resolve) => {
     const server = app.listen(0, () => {
       resolve({

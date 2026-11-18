@@ -12,6 +12,7 @@ describe('loadConfig', () => {
     expect(loadConfig({})).toEqual({
       port: 3000,
       version: '0.0.0',
+      gitSha: 'unknown',
       dataSource: 'pg',
       databaseUrl: './.data/pg',
     });
@@ -24,8 +25,24 @@ describe('loadConfig', () => {
         DATA_SOURCE: 'static',
         DATABASE_URL: 'memory://',
         npm_package_version: '1.2.3',
+        GIT_SHA: 'abc123',
       }),
-    ).toEqual({ port: 8080, version: '1.2.3', dataSource: 'static', databaseUrl: 'memory://' });
+    ).toEqual({
+      port: 8080,
+      version: '1.2.3',
+      gitSha: 'abc123',
+      dataSource: 'static',
+      databaseUrl: 'memory://',
+    });
+  });
+
+  test('SHA і версія на Render: RENDER_GIT_COMMIT, APP_VERSION (spec-lab4 AC19)', () => {
+    expect(loadConfig({ RENDER_GIT_COMMIT: 'def456', APP_VERSION: '0.4.0' })).toMatchObject({
+      gitSha: 'def456',
+      version: '0.4.0',
+    });
+    // явний GIT_SHA має пріоритет
+    expect(loadConfig({ GIT_SHA: 'x', RENDER_GIT_COMMIT: 'y' }).gitSha).toBe('x');
   });
 
   test.each(['0', '-1', '3.5', 'abc'])('невалідний PORT=%s → помилка', (port) => {

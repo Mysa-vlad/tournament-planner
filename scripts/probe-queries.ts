@@ -17,6 +17,7 @@ for (const n of [4, 8, 16]) {
   const container = await createContainer({
     port: 0,
     version: 'probe',
+    gitSha: 'test',
     dataSource: 'pg',
     databaseUrl: 'memory://',
   });

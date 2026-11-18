@@ -26,6 +26,7 @@ test('AC8: недоступна БД на старті → помилка іні
     createContainer({
       port: 0,
       version: 'test',
+      gitSha: 'test',
       dataSource: 'pg',
       databaseUrl: 'idb://not-supported-in-node',
     }),

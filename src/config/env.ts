@@ -3,6 +3,8 @@ export type DataSource = 'static' | 'pg';
 export interface AppConfig {
   readonly port: number;
   readonly version: string;
+  /** SHA задеплоєного коміту для /version (spec-lab4 AC19): GIT_SHA або RENDER_GIT_COMMIT */
+  readonly gitSha: string;
   /** static — прототип на статичних даних; pg — PostgreSQL (spec-lab2 AC7) */
   readonly dataSource: DataSource;
   /** каталог даних PGlite; 'memory://' — окрема база в пам'яті на кожен прогін */
@@ -20,7 +22,8 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): AppConfig => {
   }
   return {
     port,
-    version: env.npm_package_version ?? '0.0.0',
+    version: env.npm_package_version ?? env.APP_VERSION ?? '0.0.0',
+    gitSha: env.GIT_SHA ?? env.RENDER_GIT_COMMIT ?? 'unknown',
     dataSource,
     databaseUrl: env.DATABASE_URL ?? './.data/pg',
   };

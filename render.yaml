@@ -1,0 +1,22 @@
+# Render Blueprint (spec-lab4 §4). Деплой ініціює CD-job після зеленого CI і міграцій,
+# тому autoDeploy вимкнено: інакше Render деплоїв би коміт до того, як міграції застосовано.
+services:
+  - type: web
+    name: tournament-planner-staging
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    autoDeploy: false
+    # blue-green: нова версія отримує трафік лише після 200 від readiness
+    healthCheckPath: /health/ready
+    # створено вручну в панелі з тими самими параметрами: https://tournament-planner-staging.onrender.com
+    envVars:
+      - key: DATA_SOURCE
+        value: pg
+      - key: LOG_LEVEL
+        value: info
+      - key: DB_POOL_MAX
+        value: '5'
+      - key: DATABASE_URL
+        sync: false # секрет: рядок підключення Neon задається в панелі Render

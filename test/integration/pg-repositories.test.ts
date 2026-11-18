@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { testDatabaseUrl } from '../test-db.js';
 import {
   createDatabase,
   createPgUnitOfWork,
@@ -21,7 +22,7 @@ import { newId } from '../../src/shared/index.js';
 // Інтеграційний рівень: справжній PostgreSQL (PGlite), окрема база на файл тестів
 let db: Database;
 beforeAll(async () => {
-  db = await createDatabase('memory://');
+  db = await createDatabase(testDatabaseUrl);
   await migrate(db);
 });
 afterAll(() => db.close());
@@ -163,11 +164,12 @@ describe('транзакції', () => {
     expect(await teamsRepo().findById(id)).toBeUndefined();
   });
 
-  test('міграції ідемпотентні: повторний migrate нічого не ламає', async () => {
-    await expect(migrate(db)).resolves.toBeUndefined();
-    const rows = await db.query<{ n: number }>(
-      sql`SELECT count(*)::int AS n FROM schema_migrations`,
-    );
-    expect(rows[0]?.n).toBe(1);
+  test('міграції ідемпотентні: повторний migrate нічого не застосовує й не ламає', async () => {
+    const count = async (): Promise<number> =>
+      (await db.query<{ n: number }>(sql`SELECT count(*)::int AS n FROM schema_migrations`))[0]
+        ?.n ?? 0;
+    const before = await count();
+    await expect(migrate(db)).resolves.toEqual([]);
+    expect(await count()).toBe(before);
   });
 });

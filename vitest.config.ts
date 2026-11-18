@@ -11,7 +11,10 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.ts'],
       // точка входу процесу — покривається E2E (окремий процес), а не in-process тестами
-      exclude: ['src/server.ts', 'src/prototype/**'],
+      // src/db/cli.ts — точка входу CD-кроку міграцій (як server.ts);
+      // src/db/postgres.ts — адаптер PostgreSQL-сервера: його покриває CI-job test-postgres
+      // (TEST_DATABASE_URL), а не цей прогін на PGlite (spec-lab4 AC22)
+      exclude: ['src/server.ts', 'src/prototype/**', 'src/db/cli.ts', 'src/db/postgres.ts'],
       reporter: ['text-summary', 'text', 'html'],
       reportsDirectory: 'reports/coverage',
       thresholds: {

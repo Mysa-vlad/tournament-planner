@@ -30,7 +30,7 @@ Tournament Planner вирішує це так:
 - [spec.md](spec.md): специфікація (модулі, дані, сценарії, критерії прийняття)
 - [standards/](standards/): інженерні стандарти проєкту
 - [adr/](adr/): архітектурні рішення (MADR)
-- [DEFENSE.md](DEFENSE.md) (завдання 1), [DEFENSE-lab2.md](DEFENSE-lab2.md) (завдання 2), [DEFENSE-lab3.md](DEFENSE-lab3.md) (завдання 3): захист
+- [DEFENSE.md](DEFENSE.md) (завдання 1), [DEFENSE-lab2.md](DEFENSE-lab2.md) (завдання 2), [DEFENSE-lab3.md](DEFENSE-lab3.md) (завдання 3), [DEFENSE-lab4.md](DEFENSE-lab4.md) (завдання 4): захист
 - [ai/](ai/): слід промптів до AI
 
 ## Запуск

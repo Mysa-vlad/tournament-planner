@@ -1,5 +1,5 @@
 import { logger, SourceUnavailableError, type UnitOfWork } from '../shared/index.js';
-import type { Database } from './database.js';
+import type { Database } from './contract.js';
 import { isTransientConflict } from './errors.js';
 
 const MAX_ATTEMPTS = 3;
