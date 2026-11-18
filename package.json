@@ -28,7 +28,10 @@
     "test:e2e": "npm run build && vitest run --config vitest.e2e.config.ts",
     "mutation": "stryker run",
     "db:migrate": "tsx src/db/cli.ts migrate",
-    "db:seed": "tsx src/db/cli.ts seed"
+    "db:seed": "tsx src/db/cli.ts seed",
+    "load": "tsx scripts/load.ts",
+    "profile": "tsx scripts/profile.ts",
+    "explain": "tsx --env-file=.env.probe scripts/explain.ts"
   },
   "author": "Мусієнко Владислав (ІО-44)",
   "license": "MIT",

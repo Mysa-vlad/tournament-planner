@@ -14,7 +14,14 @@ export default defineConfig({
       // src/db/cli.ts — точка входу CD-кроку міграцій (як server.ts);
       // src/db/postgres.ts — адаптер PostgreSQL-сервера: його покриває CI-job test-postgres
       // (TEST_DATABASE_URL), а не цей прогін на PGlite (spec-lab4 AC22)
-      exclude: ['src/server.ts', 'src/prototype/**', 'src/db/cli.ts', 'src/db/postgres.ts'],
+      // src/profiling.ts — увімкнення профайлера процесу (npm run profile), як і server.ts
+      exclude: [
+        'src/server.ts',
+        'src/profiling.ts',
+        'src/prototype/**',
+        'src/db/cli.ts',
+        'src/db/postgres.ts',
+      ],
       reporter: ['text-summary', 'text', 'html'],
       reportsDirectory: 'reports/coverage',
       thresholds: {
